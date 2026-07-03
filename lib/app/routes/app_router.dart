@@ -114,8 +114,7 @@ class AppRouter {
   );
 }
 
-/// Shell wrapper que provee el MainLayout con sidebar
-class MainLayoutShell extends StatelessWidget {
+class MainLayoutShell extends StatefulWidget {
   final String currentRoute;
   final Widget child;
 
@@ -126,27 +125,53 @@ class MainLayoutShell extends StatelessWidget {
   });
 
   @override
+  State<MainLayoutShell> createState() => _MainLayoutShellState();
+}
+
+class _MainLayoutShellState extends State<MainLayoutShell> {
+  final ValueNotifier<bool> _isChatExpanded = ValueNotifier<bool>(false);
+
+  @override
+  void dispose() {
+    _isChatExpanded.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         final user = authState is AuthAuthenticated ? authState.user : null;
         final isAdmin = user?.role == UserRole.admin;
 
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: MainLayout(
-                currentRoute: currentRoute,
-                isAdmin: isAdmin,
-                onLogout: () {
-                  context.read<AuthBloc>().add(LogoutEvent());
-                  context.go(RoutePaths.login);
-                },
-                child: child,
-              ),
-            ),
-            const FloatingChatOverlay(),
-          ],
+        return ValueListenableBuilder<bool>(
+          valueListenable: _isChatExpanded,
+          builder: (context, isChatOpen, _) {
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: MainLayout(
+                    currentRoute: widget.currentRoute,
+                    isAdmin: isAdmin,
+                    onLogout: () {
+                      context.read<AuthBloc>().add(LogoutEvent());
+                      context.go(RoutePaths.login);
+                    },
+                    onMessagesPressed: () {
+                      _isChatExpanded.value = !_isChatExpanded.value;
+                    },
+                    isChatOpen: isChatOpen,
+                    child: widget.child,
+                  ),
+                ),
+                Positioned.fill(
+                  child: FloatingChatOverlay(
+                    isExpandedNotifier: _isChatExpanded,
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

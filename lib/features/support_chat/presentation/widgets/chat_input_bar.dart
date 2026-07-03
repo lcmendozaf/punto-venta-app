@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ChatInputBar extends StatefulWidget {
   const ChatInputBar({
@@ -21,6 +22,24 @@ class ChatInputBar extends StatefulWidget {
 class _ChatInputBarState extends State<ChatInputBar> {
   final _controller = TextEditingController();
   bool _hasText = false;
+  late final FocusNode _focusNode = FocusNode(
+    onKeyEvent: (node, event) {
+      if (event is KeyDownEvent) {
+        final isEnter = event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.numpadEnter;
+        if (isEnter) {
+          final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+          if (isShiftPressed) {
+            return KeyEventResult.ignored;
+          } else {
+            _send();
+            return KeyEventResult.handled;
+          }
+        }
+      }
+      return KeyEventResult.ignored;
+    },
+  );
 
   @override
   void initState() {
@@ -34,6 +53,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -86,6 +106,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
               ),
               child: TextField(
                 controller: _controller,
+                focusNode: _focusNode,
                 enabled: widget.enabled,
                 maxLines: null,
                 keyboardType: TextInputType.multiline,

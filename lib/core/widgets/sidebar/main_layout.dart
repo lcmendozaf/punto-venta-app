@@ -12,6 +12,7 @@ class MainLayout extends StatelessWidget {
   final VoidCallback? onNotificationsPressed;
   final VoidCallback? onMessagesPressed;
   final VoidCallback? onHistoryPressed;
+  final bool isChatOpen;
 
   const MainLayout({
     super.key,
@@ -23,6 +24,7 @@ class MainLayout extends StatelessWidget {
     this.onNotificationsPressed,
     this.onMessagesPressed,
     this.onHistoryPressed,
+    this.isChatOpen = false,
   });
 
   @override
@@ -40,6 +42,7 @@ class MainLayout extends StatelessWidget {
             onNotificationsPressed: onNotificationsPressed,
             onMessagesPressed: onMessagesPressed,
             onHistoryPressed: onHistoryPressed,
+            isChatOpen: isChatOpen,
           ),
           // Main content
           Expanded(

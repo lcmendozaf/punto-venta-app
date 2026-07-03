@@ -20,6 +20,9 @@ import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/order/
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/order/save_order_dialog.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/settings/pdv_settings_dialog.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/settings/settings_dialog.dart';
+import 'package:punto_venta_app/injection_container.dart' as di;
+import 'package:punto_venta_app/features/auth/data/datasources/auth_local_datasources.dart';
+import 'package:punto_venta_app/core/services/remote_config_service.dart';
 
 class AppSidebar extends StatefulWidget {
   final String currentRoute;
@@ -29,6 +32,7 @@ class AppSidebar extends StatefulWidget {
   final VoidCallback? onNotificationsPressed;
   final VoidCallback? onMessagesPressed;
   final VoidCallback? onHistoryPressed;
+  final bool isChatOpen;
 
   const AppSidebar({
     super.key,
@@ -39,6 +43,7 @@ class AppSidebar extends StatefulWidget {
     this.onNotificationsPressed,
     this.onMessagesPressed,
     this.onHistoryPressed,
+    this.isChatOpen = false,
   });
 
   @override
@@ -52,6 +57,27 @@ class _AppSidebarState extends State<AppSidebar> {
   bool _isSelectClientDialogOpen = false;
   bool _isAddClientDialogOpen = false;
   bool _isLogoutDialogOpen = false;
+  bool _isSupportChatActive = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSupportActive();
+  }
+
+  Future<void> _checkSupportActive() async {
+    try {
+      final authLocal = di.sl<AuthLocalDataSource>();
+      final enterprise = await authLocal.getCachedEnterprise();
+      final id = enterprise?.id ?? -1;
+      final active = di.sl<RemoteConfigService>().isSupportChatActive(id);
+      if (mounted) {
+        setState(() {
+          _isSupportChatActive = true;
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -277,6 +303,21 @@ class _AppSidebarState extends State<AppSidebar> {
                         },
                   ),
                 ),
+              if (_isSupportChatActive) ...[
+                _buildNavItem(
+                  context,
+                  isSelected: widget.isChatOpen,
+                  isDark: isDark,
+                  sidebarSurface: sidebarSurface,
+                  child: SidebarItem(
+                    icon: Icons.support_agent_rounded,
+                    isHighlighted: widget.isChatOpen,
+                    tooltip: 'Soporte Técnico',
+                    onTap: widget.onMessagesPressed,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               _buildNavItem(
                 context,
                 isSelected: _isLogoutDialogOpen,
