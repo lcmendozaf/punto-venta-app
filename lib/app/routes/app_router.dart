@@ -18,6 +18,7 @@ import 'package:punto_venta_app/features/pos/presentation/bloc/reports/reports_b
 import 'package:punto_venta_app/features/splash/presentation/pages/splash_page.dart';
 import 'package:punto_venta_app/features/stock/presentation/pages/stock_management_page.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
+import 'package:punto_venta_app/features/support_chat/presentation/widgets/floating_chat_overlay.dart';
 import 'route_paths.dart';
 
 class AppRouter {
@@ -131,14 +132,21 @@ class MainLayoutShell extends StatelessWidget {
         final user = authState is AuthAuthenticated ? authState.user : null;
         final isAdmin = user?.role == UserRole.admin;
 
-        return MainLayout(
-          currentRoute: currentRoute,
-          isAdmin: isAdmin,
-          onLogout: () {
-            context.read<AuthBloc>().add(LogoutEvent());
-            context.go(RoutePaths.login);
-          },
-          child: child,
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: MainLayout(
+                currentRoute: currentRoute,
+                isAdmin: isAdmin,
+                onLogout: () {
+                  context.read<AuthBloc>().add(LogoutEvent());
+                  context.go(RoutePaths.login);
+                },
+                child: child,
+              ),
+            ),
+            const FloatingChatOverlay(),
+          ],
         );
       },
     );

@@ -93,7 +93,9 @@ class AuthRepositoryImpl implements AuthRepository {
     );
 
     // Obtener PdvBaseUrl desde enterprisesLicense
-    final pdvBaseUrl = await firestoreUserDataSource.getEnterpriseLicenseBaseUrl(selectedCompany.id);
+    final pdvBaseUrl = await firestoreUserDataSource
+        .getEnterpriseLicenseBaseUrl(selectedCompany.id);
+    // final pdvBaseUrl = await firestoreUserDataSource.getEnterpriseLicenseBaseUrl(selectedCompany.id);
 
     ApiConfig.updateCompanyConfig(
       selectedCompany.id.toString(),
@@ -127,8 +129,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String userId,
     String password,
   ) async {
-    final authData =
-        await userApiDataSource.authenticateUser(userId, password);
+    final authData = await userApiDataSource.authenticateUser(userId, password);
 
     final token = authData['token'] as String;
     final userData = authData['user'] as Map<String, dynamic>;
@@ -138,8 +139,8 @@ class AuthRepositoryImpl implements AuthRepository {
       name: userData['name']?.toString() ?? '',
       password: userData['password']?.toString() ?? '',
       tipo: userData['role']?.toString() ?? '',
-      isActive: userData['is_active'] ?? true, 
-      phoneNumber: userData['phone_number']?.toString() ?? '',    
+      isActive: userData['is_active'] ?? true,
+      phoneNumber: userData['phone_number']?.toString() ?? '',
     );
 
     final userModel = UserModel.fromEntity(user);

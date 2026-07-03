@@ -1,6 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:punto_venta_app/core/database/database_helper.dart';
+import 'package:punto_venta_app/core/services/remote_config_service.dart';
+import 'package:punto_venta_app/features/support_chat/domain/repositories/support_chat_repository.dart';
+import 'package:punto_venta_app/features/support_chat/data/repositories/support_chat_repository_impl.dart';
+import 'package:punto_venta_app/features/support_chat/presentation/bloc/support_chat_bloc.dart';
 import 'package:punto_venta_app/core/network/dio_client.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/auth_local_datasources.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/google_auth_datasource.dart';
@@ -538,6 +542,21 @@ Future<void> init() async {
 
   // Database
   sl.registerLazySingleton<DatabaseHelper>(() => DatabaseHelper.instance);
+
+  //! Features - Support Chat
+  sl.registerFactory(() => SupportChatBloc(
+        repository: sl(),
+        authLocalDataSource: sl(),
+        remoteConfigService: sl(),
+      ));
+
+  sl.registerLazySingleton<SupportChatRepository>(
+    () => SupportChatRepositoryImpl(),
+  );
+
+  sl.registerLazySingleton<RemoteConfigService>(
+    () => RemoteConfigService(),
+  );
 
   //! External
   final sharedPreferences = await SharedPreferences.getInstance();

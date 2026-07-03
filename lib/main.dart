@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:punto_venta_app/core/services/remote_config_service.dart';
+import 'package:punto_venta_app/features/support_chat/presentation/bloc/support_chat_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:punto_venta_app/core/themes/theme_cubit.dart';
@@ -34,6 +36,9 @@ void main() async {
   );
   await _signInAnonymously();
 
+  // Initialize and fetch Remote Config parameters
+  await di.sl<RemoteConfigService>().fetchConfig();
+
   runApp(const MyApp());
 }
 
@@ -65,6 +70,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => di.sl<PaymentMethodsBloc>()),
         BlocProvider(create: (_) => di.sl<PdvConfigBloc>()),
         BlocProvider(create: (_) => di.sl<CheckoutBloc>()),
+        BlocProvider(create: (_) => di.sl<SupportChatBloc>()),
       ],
       child: const PosApp(),
     );
