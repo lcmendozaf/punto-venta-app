@@ -199,6 +199,7 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       var cleanPhone = phoneNumber.replaceAll(RegExp(r'\D'), '');
 
       final clientMessageId = const Uuid().v4();
+
       String? relativeStoragePath;
       String? ext;
       int? mediaSizeBytes;
@@ -242,7 +243,9 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       await Future.delayed(const Duration(milliseconds: 200));
       emit(state.copyWith(sendState: const SendMessageState.idle()));
     } catch (e) {
-      emit(state.copyWith(sendState: SendMessageState.error(ErrorParser.getCleanErrorMessage(e))));
+      emit(state.copyWith(
+          sendState:
+              SendMessageState.error(ErrorParser.getCleanErrorMessage(e))));
       await Future.delayed(const Duration(seconds: 2));
       emit(state.copyWith(sendState: const SendMessageState.idle()));
     }

@@ -32,9 +32,11 @@ class _FloatingChatOverlayState extends State<FloatingChatOverlay> {
   @override
   void initState() {
     super.initState();
-    context.read<SupportChatBloc>().add(const LoadMessages());
     FloatingChatOverlay.isExpandedNotifier.addListener(_handleNotifierChanged);
     _isExpanded = FloatingChatOverlay.isExpandedNotifier.value;
+    if (_isExpanded) {
+      context.read<SupportChatBloc>().add(const LoadMessages());
+    }
   }
 
   @override
@@ -47,8 +49,12 @@ class _FloatingChatOverlayState extends State<FloatingChatOverlay> {
 
   void _handleNotifierChanged() {
     if (mounted) {
+      final isExpanded = FloatingChatOverlay.isExpandedNotifier.value;
+      if (isExpanded) {
+        context.read<SupportChatBloc>().add(const LoadMessages());
+      }
       setState(() {
-        _isExpanded = FloatingChatOverlay.isExpandedNotifier.value;
+        _isExpanded = isExpanded;
       });
     }
   }

@@ -10,7 +10,8 @@ class SupportChatRepositoryImpl implements SupportChatRepository {
 
   /// Initializes the Supabase client. Prevents double initialization.
   @override
-  Future<void> initialize({required String url, required String anonKey}) async {
+  Future<void> initialize(
+      {required String url, required String anonKey}) async {
     if (_initialized) return;
     await Supabase.initialize(
       url: url,
@@ -56,7 +57,8 @@ class SupportChatRepositoryImpl implements SupportChatRepository {
     try {
       final List<dynamic> response = await _client
           .from('whatsapp_messages')
-          .select('id, body, timestamp, is_outbound, status, sender_phone, media_kind, media_mime, media_storage_path, media_caption, sent_by_display_name')
+          .select(
+              'id, body, timestamp, is_outbound, status, sender_phone, media_kind, media_mime, media_storage_path, media_caption, sent_by_display_name')
           .order('timestamp', ascending: false)
           .limit(100);
 
@@ -82,9 +84,7 @@ class SupportChatRepositoryImpl implements SupportChatRepository {
       }
       await Future.wait(signFutures);
 
-      return list
-          .map((json) => SupportMessageModel.fromJson(json))
-          .toList();
+      return list.map((json) => SupportMessageModel.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Error al obtener el historial de mensajes: $e');
     }
@@ -98,14 +98,15 @@ class SupportChatRepositoryImpl implements SupportChatRepository {
         .stream(primaryKey: ['id'])
         .order('timestamp', ascending: false)
         .asyncMap((List<Map<String, dynamic>> maps) async {
-          final List<Map<String, dynamic>> list = maps
-              .map((json) => Map<String, dynamic>.from(json))
-              .toList();
+          final List<Map<String, dynamic>> list =
+              maps.map((json) => Map<String, dynamic>.from(json)).toList();
 
           final List<Future<void>> signFutures = [];
           for (final map in list) {
             final path = map['media_storage_path'] as String?;
-            if (map['media_kind'] != 'text' && path != null && path.isNotEmpty) {
+            if (map['media_kind'] != 'text' &&
+                path != null &&
+                path.isNotEmpty) {
               signFutures.add(() async {
                 try {
                   final signedUrl = await _client.storage
@@ -130,9 +131,7 @@ class SupportChatRepositoryImpl implements SupportChatRepository {
   @override
   Future<void> sendMessage(SupportMessageInsertModel message) async {
     try {
-      await _client
-          .from('whatsapp_messages')
-          .insert(message.toJson());
+      await _client.from('whatsapp_messages').insert(message.toJson());
     } catch (e) {
       throw Exception('Error al enviar el mensaje: $e');
     }
@@ -163,9 +162,7 @@ class SupportChatRepositoryImpl implements SupportChatRepository {
       final file = File(localPath);
       final bytes = await file.readAsBytes();
 
-      await _client.storage
-          .from('whatsapp-media')
-          .uploadBinary(
+      await _client.storage.from('whatsapp-media').uploadBinary(
             destinationPath,
             bytes,
             fileOptions: FileOptions(
