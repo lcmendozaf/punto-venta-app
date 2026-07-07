@@ -15,6 +15,7 @@ abstract class AuthLocalDataSource {
   Future<void> logout();
   Future<void> clearEnterprise();
   Future<void> clearEmail();
+  Future<void> updateCachedUserPhoneNumber(String phoneNumber);
 }
 
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
@@ -90,5 +91,21 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> clearEmail() async {
     await sharedPreferences.remove(cachedEmailKey);
+  }
+
+  @override
+  Future<void> updateCachedUserPhoneNumber(String phoneNumber) async {
+    final user = await getCachedUser();
+    if (user != null) {
+      final updatedUser = UserModel(
+        id: user.id,
+        name: user.name,
+        tipo: user.tipo,
+        password: user.password,
+        isActive: user.isActive,
+        phoneNumber: phoneNumber,
+      );
+      await cacheUser(updatedUser);
+    }
   }
 }

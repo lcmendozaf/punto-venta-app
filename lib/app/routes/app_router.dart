@@ -19,6 +19,7 @@ import 'package:punto_venta_app/features/splash/presentation/pages/splash_page.d
 import 'package:punto_venta_app/features/stock/presentation/pages/stock_management_page.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
 import 'package:punto_venta_app/features/support_chat/presentation/widgets/floating_chat_overlay.dart';
+import 'package:punto_venta_app/core/services/push_notification_service.dart';
 import 'route_paths.dart';
 
 class AppRouter {
@@ -129,12 +130,18 @@ class MainLayoutShell extends StatefulWidget {
 }
 
 class _MainLayoutShellState extends State<MainLayoutShell> {
-  final ValueNotifier<bool> _isChatExpanded = ValueNotifier<bool>(false);
-
   @override
-  void dispose() {
-    _isChatExpanded.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _registerPushNotifications();
+  }
+
+  Future<void> _registerPushNotifications() async {
+    try {
+      await PushNotificationService().registerDeviceToken();
+    } catch (e) {
+      debugPrint('Error al registrar tokens de push notification: $e');
+    }
   }
 
   @override
@@ -145,7 +152,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
         final isAdmin = user?.role == UserRole.admin;
 
         return ValueListenableBuilder<bool>(
-          valueListenable: _isChatExpanded,
+          valueListenable: FloatingChatOverlay.isExpandedNotifier,
           builder: (context, isChatOpen, _) {
             return Stack(
               children: [
@@ -158,16 +165,15 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
                       context.go(RoutePaths.login);
                     },
                     onMessagesPressed: () {
-                      _isChatExpanded.value = !_isChatExpanded.value;
+                      FloatingChatOverlay.isExpandedNotifier.value =
+                          !FloatingChatOverlay.isExpandedNotifier.value;
                     },
                     isChatOpen: isChatOpen,
                     child: widget.child,
                   ),
                 ),
                 Positioned.fill(
-                  child: FloatingChatOverlay(
-                    isExpandedNotifier: _isChatExpanded,
-                  ),
+                  child: const FloatingChatOverlay(),
                 ),
               ],
             );

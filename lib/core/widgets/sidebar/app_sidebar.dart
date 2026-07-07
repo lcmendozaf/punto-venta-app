@@ -73,7 +73,7 @@ class _AppSidebarState extends State<AppSidebar> {
       final active = di.sl<RemoteConfigService>().isSupportChatActive(id);
       if (mounted) {
         setState(() {
-          _isSupportChatActive = true;
+          _isSupportChatActive = active;
         });
       }
     } catch (_) {}
@@ -312,7 +312,7 @@ class _AppSidebarState extends State<AppSidebar> {
                   child: SidebarItem(
                     icon: Icons.support_agent_rounded,
                     isHighlighted: widget.isChatOpen,
-                    tooltip: 'Soporte Técnico',
+                    tooltip: 'Chat de soporte',
                     onTap: widget.onMessagesPressed,
                   ),
                 ),

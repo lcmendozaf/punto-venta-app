@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:punto_venta_app/core/database/database_helper.dart';
 import 'package:punto_venta_app/core/services/remote_config_service.dart';
+import 'package:punto_venta_app/core/services/notification_service.dart';
+import 'package:punto_venta_app/core/services/push_notification_service.dart';
 import 'package:punto_venta_app/features/support_chat/domain/repositories/support_chat_repository.dart';
 import 'package:punto_venta_app/features/support_chat/data/repositories/support_chat_repository_impl.dart';
 import 'package:punto_venta_app/features/support_chat/presentation/bloc/support_chat_bloc.dart';
@@ -548,6 +550,7 @@ Future<void> init() async {
         repository: sl(),
         authLocalDataSource: sl(),
         remoteConfigService: sl(),
+        pushNotificationService: sl(),
       ));
 
   sl.registerLazySingleton<SupportChatRepository>(
@@ -556,6 +559,14 @@ Future<void> init() async {
 
   sl.registerLazySingleton<RemoteConfigService>(
     () => RemoteConfigService(),
+  );
+
+  sl.registerLazySingleton<NotificationService>(
+    () => NotificationService(),
+  );
+
+  sl.registerLazySingleton<PushNotificationService>(
+    () => PushNotificationService(),
   );
 
   //! External

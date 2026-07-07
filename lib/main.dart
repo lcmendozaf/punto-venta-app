@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:punto_venta_app/core/services/remote_config_service.dart';
+import 'package:punto_venta_app/core/services/push_notification_service.dart';
 import 'package:punto_venta_app/features/support_chat/presentation/bloc/support_chat_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,10 +35,14 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   await _signInAnonymously();
 
-  // Initialize and fetch Remote Config parameters
-  await di.sl<RemoteConfigService>().fetchConfig();
+  final pushNotificationService = di.sl<PushNotificationService>();
+  await pushNotificationService.initialize();
+
+  final remoteConfigService = di.sl<RemoteConfigService>();
+  await remoteConfigService.fetchConfig();
 
   runApp(const MyApp());
 }

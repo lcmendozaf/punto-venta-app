@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/auth_local_datasources.dart';
@@ -9,6 +10,8 @@ import 'package:punto_venta_app/features/support_chat/presentation/bloc/support_
 import 'package:punto_venta_app/features/support_chat/presentation/bloc/support_chat_state.dart';
 import 'package:punto_venta_app/features/support_chat/domain/repositories/support_chat_repository.dart';
 import 'package:punto_venta_app/core/services/remote_config_service.dart';
+import 'package:punto_venta_app/core/services/push_notification_service.dart';
+import 'package:punto_venta_app/core/utils/error_parser.dart';
 
 export 'support_chat_event.dart';
 export 'support_chat_state.dart';
@@ -17,15 +20,18 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
   final SupportChatRepository _repository;
   final AuthLocalDataSource _authLocalDataSource;
   final RemoteConfigService _remoteConfigService;
+  final PushNotificationService _pushNotificationService;
   StreamSubscription<List<SupportMessageModel>>? _messageSubscription;
 
   SupportChatBloc({
     required SupportChatRepository repository,
     required AuthLocalDataSource authLocalDataSource,
     required RemoteConfigService remoteConfigService,
+    required PushNotificationService pushNotificationService,
   })  : _repository = repository,
         _authLocalDataSource = authLocalDataSource,
         _remoteConfigService = remoteConfigService,
+        _pushNotificationService = pushNotificationService,
         super(SupportChatState.initial()) {
     on<LoadMessages>(_onLoadMessages);
     on<SendMessage>(_onSendMessage);
@@ -34,6 +40,7 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
     on<ClearImagePreview>(_onClearImagePreview);
     on<MessageReceived>(_onMessageReceived);
     on<MessagesUpdated>(_onMessagesUpdated);
+    on<SubmitPhoneNumber>(_onSubmitPhoneNumber);
   }
 
   @override
@@ -63,8 +70,13 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       final enterpriseId = cachedEnterprise?.id ?? -1;
       final enterpriseIdStr = enterpriseId.toString();
 
+      debugPrint(
+          'SupportChatBloc: Loading messages for enterpriseId: $enterpriseId');
+
       final config = _remoteConfigService.getSupportChatConfig(enterpriseId);
       if (config == null) {
+        debugPrint(
+            'SupportChatBloc: SUPPORT_CHAT_CONFIG config is null for enterpriseId: $enterpriseId');
         emit(state.copyWith(
           messagesState: const MessagesState.error(
               "El chat de soporte no está habilitado para esta empresa."),
@@ -76,8 +88,10 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       final apiKeys = config['apiKeys'];
       String? apiKey;
       if (apiKeys is Map) {
-        apiKey = (apiKeys['pos'] ?? apiKeys['deliveries']) as String?;
+        apiKey = (apiKeys['pos']) as String?;
       }
+
+      debugPrint('SupportChatBloc: baseUrl is "$baseUrl", apiKey is "$apiKey"');
 
       if (baseUrl == null ||
           apiKey == null ||
@@ -91,9 +105,11 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       }
 
       // Initialize Supabase
+      debugPrint('SupportChatBloc: Initializing Supabase...');
       await _repository.initialize(url: baseUrl, anonKey: apiKey);
 
       final cachedUser = await _authLocalDataSource.getCachedUser();
+      final cachedEmail = await _authLocalDataSource.getCachedEmail();
       final userId = cachedUser?.id ?? '';
       final userName = cachedUser?.name ?? '';
       final phoneNumber = cachedUser?.phoneNumber ?? '';
@@ -107,10 +123,9 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
         return;
       }
 
-      if (cleanPhone.isEmpty || userId.isEmpty) {
+      if (cleanPhone.isEmpty) {
         emit(state.copyWith(
-          messagesState: const MessagesState.error(
-              "No se pudo obtener información del usuario."),
+          messagesState: const MessagesState.needsPhoneNumber(),
         ));
         return;
       }
@@ -127,7 +142,7 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       };
 
       // Authenticate
-      final email = 'pos$userId@$enterpriseIdStr.com';
+      final email = cachedEmail ?? 'pos$userId@$enterpriseIdStr.com';
       const password = 'keuken8761';
       await _repository.loginOrRegister(
         email: email,
@@ -159,7 +174,7 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       );
     } catch (e) {
       emit(state.copyWith(
-        messagesState: MessagesState.error(e.toString()),
+        messagesState: MessagesState.error(ErrorParser.getCleanErrorMessage(e)),
       ));
     }
   }
@@ -227,7 +242,7 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       await Future.delayed(const Duration(milliseconds: 200));
       emit(state.copyWith(sendState: const SendMessageState.idle()));
     } catch (e) {
-      emit(state.copyWith(sendState: SendMessageState.error(e.toString())));
+      emit(state.copyWith(sendState: SendMessageState.error(ErrorParser.getCleanErrorMessage(e))));
       await Future.delayed(const Duration(seconds: 2));
       emit(state.copyWith(sendState: const SendMessageState.idle()));
     }
@@ -261,5 +276,28 @@ class SupportChatBloc extends Bloc<SupportChatEvent, SupportChatState> {
       messages: updated,
       messagesState: MessagesState.loaded(updated),
     ));
+  }
+
+  Future<void> _onSubmitPhoneNumber(
+    SubmitPhoneNumber event,
+    Emitter<SupportChatState> emit,
+  ) async {
+    emit(state.copyWith(messagesState: const MessagesState.loading()));
+    try {
+      final cleanPhone = event.phoneNumber.replaceAll(RegExp(r'\D'), '');
+      await _authLocalDataSource.updateCachedUserPhoneNumber(cleanPhone);
+
+      try {
+        await _pushNotificationService.registerDeviceToken();
+      } catch (e) {
+        debugPrint('Error al registrar token de push al guardar teléfono: $e');
+      }
+
+      add(const LoadMessages());
+    } catch (e) {
+      emit(state.copyWith(
+        messagesState: MessagesState.error(ErrorParser.getCleanErrorMessage(e)),
+      ));
+    }
   }
 }

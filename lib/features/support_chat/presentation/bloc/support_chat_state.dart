@@ -25,6 +25,7 @@ class MessagesState with _$MessagesState {
   const factory MessagesState.loaded(List<SupportMessageModel> messages) =
       MessagesLoaded;
   const factory MessagesState.error(String message) = MessagesError;
+  const factory MessagesState.needsPhoneNumber() = MessagesNeedsPhoneNumber;
 }
 
 @freezed

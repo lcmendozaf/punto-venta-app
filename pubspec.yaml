@@ -53,6 +53,11 @@ dependencies:
   image: 4.2.0
   url_launcher: 6.2.5
   crypto: ^3.0.3
+  flutter_local_notifications: 19.5.0
+  flutter_local_notifications_windows: 1.0.3
+  intl_phone_field: 3.2.0
+
+
 
   
   # Firebase
@@ -60,7 +65,8 @@ dependencies:
   firebase_auth: 5.5.0
   cloud_firestore: 5.6.4
   google_sign_in: 6.2.2
-  firebase_remote_config: 5.0.0
+  firebase_remote_config: ^5.0.0
+  firebase_messaging: 15.2.3
 
   # Supabase & Chat Dependencies
   supabase_flutter: 2.8.3

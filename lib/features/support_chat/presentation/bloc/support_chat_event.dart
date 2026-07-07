@@ -25,4 +25,6 @@ class SupportChatEvent with _$SupportChatEvent {
   const factory SupportChatEvent.messagesUpdated(
     List<SupportMessageModel> messages,
   ) = MessagesUpdated;
+
+  const factory SupportChatEvent.submitPhoneNumber(String phoneNumber) = SubmitPhoneNumber;
 }

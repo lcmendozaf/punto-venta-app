@@ -95,7 +95,6 @@ class AuthRepositoryImpl implements AuthRepository {
     // Obtener PdvBaseUrl desde enterprisesLicense
     final pdvBaseUrl = await firestoreUserDataSource
         .getEnterpriseLicenseBaseUrl(selectedCompany.id);
-    // final pdvBaseUrl = await firestoreUserDataSource.getEnterpriseLicenseBaseUrl(selectedCompany.id);
 
     ApiConfig.updateCompanyConfig(
       selectedCompany.id.toString(),
