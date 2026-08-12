@@ -25,11 +25,12 @@ class AddToCart extends CartEvent {
 class ReplaceCart extends CartEvent {
   final List<CartItem> items;
   final List<CartLogEntry> log;
+  final String? ticketId;
 
-  const ReplaceCart({required this.items, this.log = const []});
+  const ReplaceCart({required this.items, this.log = const [], this.ticketId});
 
   @override
-  List<Object> get props => [items, log];
+  List<Object> get props => [items, log, ticketId ?? ''];
 }
 
 class RemoveQuantityFromCart extends CartEvent {

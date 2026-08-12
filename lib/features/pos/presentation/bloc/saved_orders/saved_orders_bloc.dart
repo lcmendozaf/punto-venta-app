@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:punto_venta_app/features/pos/domain/usecases/load_ordes_usecase.dart';
 import 'package:punto_venta_app/features/pos/domain/usecases/save_order_usecase.dart';
 import 'saved_orders_event.dart';
@@ -7,10 +8,12 @@ import 'saved_orders_state.dart';
 class SavedOrdersBloc extends Bloc<SavedOrdersEvent, SavedOrdersState> {
   final SaveOrderUsecase saveOrderUsecase;
   final LoadSavedOrdersUsecase loadSavedOrdersUsecase;
+  final SharedPreferences sharedPreferences;
 
   SavedOrdersBloc({
     required this.saveOrderUsecase,
     required this.loadSavedOrdersUsecase,
+    required this.sharedPreferences,
   }) : super(SavedOrdersInitial()) {
     on<LoadSavedOrders>(_onLoadSavedOrders);
     on<SaveCurrentOrder>(_onSaveCurrentOrder);
@@ -36,12 +39,14 @@ class SavedOrdersBloc extends Bloc<SavedOrdersEvent, SavedOrdersState> {
     Emitter<SavedOrdersState> emit,
   ) async {
     try {
+      final ticketId = sharedPreferences.getString('current_ticket_id');
       await saveOrderUsecase(
         name: event.name,
         items: event.items,
         logs: event.logItems,
         total: event.total,
         clientName: event.clientName,
+        ticketId: ticketId,
       );
       emit(const OrderSaved('Pedido guardado exitosamente'));
 

@@ -14,13 +14,14 @@ class SaveOrderUsecase {
     required List<CartLogEntry> logs,
     required double total,
     String? clientName,
+    String? ticketId,
   }) async {
     if (items.isEmpty) {
       throw Exception('No se puede guardar un pedido vacío');
     }
 
     final order = SavedOrder(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: ticketId ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: name.trim().isEmpty
           ? 'Pedido ${DateTime.now().day}/${DateTime.now().month}'
           : name.trim(),

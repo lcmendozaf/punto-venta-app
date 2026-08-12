@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../../../domain/usecases/manage_cart_usecase.dart';
 import '../../../domain/entities/cart_item.dart';
@@ -9,8 +10,12 @@ import 'package:punto_venta_app/features/pos/presentation/utils/internal_tax_cal
 
 class CartBloc extends Bloc<CartEvent, CartState> {
   final ManageCartUsecase manageCartUsecase;
+  final SharedPreferences sharedPreferences;
 
-  CartBloc({required this.manageCartUsecase}) : super(CartInitial()) {
+  CartBloc({
+    required this.manageCartUsecase,
+    required this.sharedPreferences,
+  }) : super(CartInitial()) {
     on<AddToCart>(_onAddToCart);
     on<RemoveQuantityFromCart>(_onRemoveQuantityFromCart);
     on<ClearCart>(_onClearCart);
@@ -19,6 +24,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
   void _onAddToCart(AddToCart event, Emitter<CartState> emit) {
     final currentItems = _getCurrentItems();
+    if (currentItems.isEmpty) {
+      final ticketId = const Uuid().v4();
+      sharedPreferences.setString('current_ticket_id', ticketId);
+    }
     final newItems = manageCartUsecase.addToCart(
       currentItems,
       event.product,
@@ -75,6 +84,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     final items = event.items;
     final log = event.log;
     final totalItems = manageCartUsecase.getTotalItems(items);
+
+    if (event.ticketId != null) {
+      sharedPreferences.setString('current_ticket_id', event.ticketId!);
+    }
 
     final totals = _calculateSubtotalAndIva(items);
     final subtotal = totals['subtotal']!;
@@ -150,6 +163,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   void _onClearCart(ClearCart event, Emitter<CartState> emit) {
+    sharedPreferences.remove('current_ticket_id');
     emit(const CartLoaded(
       items: [],
       total: 0.0,

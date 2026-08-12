@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import 'package:punto_venta_app/core/constants/ticket_template_types.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/auth_local_datasources.dart';
 import 'package:punto_venta_app/features/pos/data/datasources/pdv_local_datasource.dart';
@@ -31,7 +33,8 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   final SendInvoiceUseCase sendInvoiceUseCase;
   final ProcessPartialReturnUseCase processPartialReturnUseCase;
   final CalculateOrderTaxesUseCase calculateOrderTaxesUseCase;
-
+  final SharedPreferences sharedPreferences;
+ 
   CheckoutBloc({
     required this.authLocalDataSource,
     required this.pdvLocalDataSource,
@@ -44,6 +47,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     required this.sendInvoiceUseCase,
     required this.processPartialReturnUseCase,
     required this.calculateOrderTaxesUseCase,
+    required this.sharedPreferences,
   }) : super(const CheckoutInitial()) {
     on<ProcessSale>(_onProcessSale);
     on<ResetCheckout>(_onResetCheckout);
@@ -134,8 +138,11 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         }
       }
 
+      final currentTicketId = sharedPreferences.getString('current_ticket_id') ?? const Uuid().v4();
+
       // Crear PrintJob (sin ticketId definitivo)
       final tempPrintJob = PrintJob(
+        ticketId: currentTicketId,
         items: event.items,
         logItems: event.logItems,
         total: totalWithIibb,
@@ -167,6 +174,9 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
       // Enviar factura y obtener ticketId y description
       final invoiceResponse = await sendInvoiceUseCase(tempPrintJob);
+ 
+      // Eliminar el ticketId de SharedPreferences tras una respuesta exitosa del backend
+      await sharedPreferences.remove('current_ticket_id');
 
       final ticketId = invoiceResponse['ticketId'] ?? '';
       final description = invoiceResponse['description'];

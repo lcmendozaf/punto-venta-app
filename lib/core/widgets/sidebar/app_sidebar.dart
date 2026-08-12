@@ -468,7 +468,11 @@ class _AppSidebarState extends State<AppSidebar> {
 
     if (result != null && mounted) {
       context.read<CartBloc>().add(
-            ReplaceCart(items: result.items, log: result.logs),
+            ReplaceCart(
+              items: result.items,
+              log: result.logs,
+              ticketId: result.id,
+            ),
           );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

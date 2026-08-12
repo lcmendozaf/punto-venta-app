@@ -208,11 +208,15 @@ Future<void> init() async {
   // Bloc
   sl.registerFactory(() =>
       ProductBloc(getProductsUsecase: sl(), priceListLocalDataSource: sl()));
-  sl.registerFactory(() => CartBloc(manageCartUsecase: sl()));
+  sl.registerFactory(() => CartBloc(
+        manageCartUsecase: sl(),
+        sharedPreferences: sl(),
+      ));
   sl.registerFactory(() => UiBloc());
   sl.registerFactory(() => SavedOrdersBloc(
         saveOrderUsecase: sl(),
         loadSavedOrdersUsecase: sl(),
+        sharedPreferences: sl(),
       ));
   sl.registerFactory(() =>
       ReportsBloc(getReportsUsecase: sl(), generateCreditNoteUsecase: sl()));
@@ -247,6 +251,7 @@ Future<void> init() async {
         sendInvoiceUseCase: sl(),
         processPartialReturnUseCase: sl(),
         calculateOrderTaxesUseCase: sl(),
+        sharedPreferences: sl(),
       ));
 
   sl.registerLazySingleton(() => CalculateOrderTaxesUseCase(
