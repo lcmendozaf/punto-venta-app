@@ -17,6 +17,8 @@ import 'package:punto_venta_app/features/pos/presentation/bloc/pdv_config/pdv_co
 import 'package:punto_venta_app/features/pos/presentation/bloc/pdv_config/pdv_config_event.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/pdv_config/pdv_config_state.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
+import 'widgets/pdv_client_selector.dart';
+import 'widgets/pdv_selected_client_status.dart';
 
 Future<({int pdvId, int sucursalId})?> showPdvSettingsDialog(
     BuildContext context, bool isAdmin) async {
@@ -38,8 +40,6 @@ class _PdvSettingsDialogContent extends StatefulWidget {
   final bool isAdmin;
   const _PdvSettingsDialogContent(this.isAdmin);
 
-  static const double clientListHeight = 200;
-
   @override
   State<_PdvSettingsDialogContent> createState() =>
       _PdvSettingsDialogContentState();
@@ -47,8 +47,6 @@ class _PdvSettingsDialogContent extends StatefulWidget {
 
 class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
   final formKey = GlobalKey<FormState>();
-  late TextEditingController pdvIdController;
-  late TextEditingController branchIdController;
   final TextEditingController _clientSearchController = TextEditingController();
   Timer? _searchDebounce;
 
@@ -65,8 +63,6 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
   @override
   void initState() {
     super.initState();
-    pdvIdController = TextEditingController();
-    branchIdController = TextEditingController();
 
     final clientsState = context.read<ClientsBloc>().state;
     if (clientsState is ClientsLoaded) {
@@ -79,8 +75,6 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    pdvIdController.dispose();
-    branchIdController.dispose();
     _clientSearchController.dispose();
     super.dispose();
   }
@@ -115,33 +109,15 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
     setState(() => _clientSearchQuery = '');
   }
 
-  List<Client> _filterClients(List<Client> clients) {
-    if (_clientSearchQuery.isEmpty) return clients;
-    return clients.where((client) {
-      return client.name.toLowerCase().contains(_clientSearchQuery) ||
-          client.id.toString().contains(_clientSearchQuery) ||
-          (client.document?.toLowerCase().contains(_clientSearchQuery) ??
-              false);
-    }).toList();
-  }
-
   void _updateControllersFromConfig(PdvConfig config, List<Branch> branches) {
-    pdvIdController.text = config.pdvId?.toString() ?? '';
-    branchIdController.text = config.branchId?.toString() ?? '';
-
     _branches = branches;
     _pdvConfig = config;
 
     if (config.branchId != null) {
-      Branch? matchedBranch;
-      for (final branch in branches) {
-        if (branch.id == config.branchId) {
-          matchedBranch = branch;
-          break;
-        }
-      }
-      _selectedBranch =
-          matchedBranch ?? (branches.isNotEmpty ? branches.first : null);
+      _selectedBranch = branches.firstWhere(
+        (b) => b.id == config.branchId,
+        orElse: () => branches.isNotEmpty ? branches.first : _selectedBranch!,
+      );
     }
 
     _syncSelectedClientFromConfig();
@@ -149,74 +125,22 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
 
   void _syncSelectedClientFromConfig() {
     if (_pdvConfig?.pdvId == null || _clients.isEmpty) return;
-
-    Client? matchedClient;
-    for (final client in _clients) {
-      if (client.id == _pdvConfig!.pdvId) {
-        matchedClient = client;
-        break;
-      }
+    final matched = _clients.where((c) => c.id == _pdvConfig!.pdvId).toList();
+    if (matched.isNotEmpty) {
+      _selectedClient = matched.first;
     }
-    _selectedClient = matchedClient;
   }
 
   void _onBranchSelected(Branch? branch) {
     setState(() {
       _selectedBranch = branch;
-      if (branch != null) {
-        branchIdController.text = branch.id.toString();
-      }
     });
   }
 
   void _onClientSelected(Client? client) {
     setState(() {
       _selectedClient = client;
-      if (client != null) {
-        pdvIdController.text = client.id.toString();
-      }
     });
-  }
-
-  Widget _buildClientList() {
-    if (_isClientsLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final filteredClients = _filterClients(_clients);
-
-    if (_clients.isEmpty) {
-      return const Center(
-        child: Text(
-          'No hay clientes disponibles',
-          style: TextStyle(color: Colors.grey),
-        ),
-      );
-    }
-
-    if (filteredClients.isEmpty) {
-      return const Center(
-        child: Text(
-          'No se encontraron clientes',
-          style: TextStyle(color: Colors.grey),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: filteredClients.length,
-      itemBuilder: (context, index) {
-        final client = filteredClients[index];
-        final isSelected = _selectedClient?.id == client.id;
-
-        return _PdvClientListTile(
-          key: ValueKey(client.id),
-          client: client,
-          isSelected: isSelected,
-          onTap: () => _onClientSelected(client),
-        );
-      },
-    );
   }
 
   @override
@@ -286,14 +210,16 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
                             message = isConfigLoading
                                 ? 'Cargando configuración...'
                                 : 'Configura los datos de tu punto de venta';
-                            bgColor = Colors.blue.shade50;
-                            borderColor = Colors.blue.shade200;
+                            bgColor = AppColors.primary.withValues(alpha: 0.1);
+                            borderColor =
+                                AppColors.primary.withValues(alpha: 0.2);
                             icon = Icons.info_outline;
-                            accentColor = Colors.blue;
+                            accentColor = AppColors.primary;
                           }
 
                           return Container(
                             padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 10),
                             decoration: BoxDecoration(
                               color: bgColor,
                               borderRadius: BorderRadius.circular(8),
@@ -340,7 +266,33 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppDimensions.paddingM),
+                            DropdownButtonFormField<Branch>(
+                              value: _selectedBranch,
+                              decoration: const InputDecoration(
+                                labelText: 'Seleccionar Sucursal',
+                                prefixIcon: Icon(Icons.business),
+                                border: OutlineInputBorder(),
+                              ),
+                              items: _branches.map((branch) {
+                                return DropdownMenuItem<Branch>(
+                                  value: branch,
+                                  child:
+                                      Text('${branch.name} - Id: ${branch.id}'),
+                                );
+                              }).toList(),
+                              onChanged: _onBranchSelected,
+                              validator: (v) {
+                                if (v == null) {
+                                  return 'Selecciona una sucursal';
+                                }
+                                return null;
+                              },
+                            ),
+                            PdvSelectedClientStatus(
+                              selectedClient: _selectedClient,
+                              isAdmin: widget.isAdmin,
+                            ),
                             if (widget.isAdmin) ...[
                               ValueListenableBuilder<TextEditingValue>(
                                 valueListenable: _clientSearchController,
@@ -364,116 +316,17 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
                                 },
                               ),
                               const SizedBox(height: 8),
-                              Container(
-                                decoration: BoxDecoration(
-                                  border:
-                                      Border.all(color: Colors.grey.shade300),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                height:
-                                    _PdvSettingsDialogContent.clientListHeight,
-                                child: _buildClientList(),
+                              PdvClientSelector(
+                                clients: _clients,
+                                isLoading: _isClientsLoading,
+                                selectedClient: _selectedClient,
+                                searchQuery: _clientSearchQuery,
+                                onClientSelected: _onClientSelected,
                               ),
                               const SizedBox(height: 8),
                             ],
-                            if (_selectedClient != null)
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border:
-                                      Border.all(color: Colors.green.shade200),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.check_circle,
-                                        size: 20, color: Colors.green),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Cliente seleccionado: ${_selectedClient!.name} [${_selectedClient!.id}]',
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else if (widget.isAdmin)
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border:
-                                      Border.all(color: Colors.orange.shade200),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.warning_amber,
-                                        size: 20, color: Colors.orange),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Selecciona un cliente default',
-                                        style: TextStyle(fontSize: 13),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border:
-                                      Border.all(color: Colors.red.shade200),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.error_outline,
-                                        size: 20, color: Colors.red.shade700),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'No se ha guardado el Cliente Default. Por favor, pide a un Admin que lo configure.',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.red.shade700,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                           ],
                         ),
-                        const SizedBox(height: AppDimensions.paddingM),
-                        DropdownButtonFormField<Branch>(
-                          value: _selectedBranch,
-                          decoration: const InputDecoration(
-                            labelText: 'Seleccionar Sucursal',
-                            prefixIcon: Icon(Icons.business),
-                            border: OutlineInputBorder(),
-                          ),
-                          items: _branches.map((branch) {
-                            return DropdownMenuItem<Branch>(
-                              value: branch,
-                              child: Text('${branch.name} - Id: ${branch.id}'),
-                            );
-                          }).toList(),
-                          onChanged: _onBranchSelected,
-                          validator: (v) {
-                            if (v == null) {
-                              return 'Selecciona una sucursal';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: AppDimensions.paddingM),
                       ],
                     ],
                   ),
@@ -505,8 +358,7 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
                         setState(() => _localError = null);
 
                         final pdvId = _selectedClient!.id;
-                        final branchId =
-                            int.parse(branchIdController.text.trim());
+                        final branchId = _selectedBranch!.id;
 
                         final newConfig = PdvConfig(
                           pdvId: pdvId,
@@ -525,47 +377,6 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
           );
         },
       ),
-    );
-  }
-}
-
-class _PdvClientListTile extends StatelessWidget {
-  final Client client;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PdvClientListTile({
-    super.key,
-    required this.client,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      selected: isSelected,
-      selectedTileColor: AppColors.primary.withValues(alpha: 0.1),
-      leading: CircleAvatar(
-        backgroundColor: isSelected ? AppColors.primary : Colors.grey.shade300,
-        child: Icon(
-          Icons.person,
-          color: isSelected ? Colors.white : Colors.grey.shade600,
-        ),
-      ),
-      title: Text(
-        client.name,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-      subtitle: Text(
-        'ID: ${client.id}${client.document != null ? ' - ${client.document}' : ''}',
-      ),
-      trailing: isSelected
-          ? const Icon(Icons.check_circle, color: AppColors.primary)
-          : null,
-      onTap: onTap,
     );
   }
 }

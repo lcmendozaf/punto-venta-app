@@ -221,7 +221,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
 
       emit(CreditNoteGenerationError(
         ticketId: event.ticketId,
-        message: 'Error al convertir a nota de crédito: $message',
+        message: 'Error al generar nota de crédito: $message',
       ));
 
       if (currentState is ReportsLoaded) {
