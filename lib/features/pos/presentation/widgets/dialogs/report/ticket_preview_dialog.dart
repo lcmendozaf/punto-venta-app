@@ -219,11 +219,23 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
                 ),
               );
             } else if (state is PrinterError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+              showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Atención'),
+                    ],
+                  ),
                   content: Text(state.message),
-                  backgroundColor: AppColors.error,
-                  behavior: SnackBarBehavior.floating,
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cerrar'),
+                    ),
+                  ],
                 ),
               );
             }
@@ -249,11 +261,23 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
               if (mounted) {
                 setState(() => _isGeneratingCreditNote = false);
               }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+              showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Atención'),
+                    ],
+                  ),
                   content: Text(state.message),
-                  backgroundColor: AppColors.error,
-                  behavior: SnackBarBehavior.floating,
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cerrar'),
+                    ),
+                  ],
                 ),
               );
             }
@@ -893,7 +917,8 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
     return price * (1 + tax);
   }
 
-  double _getDisplayUnitPrice(CartItem item, double basePrice, {required bool showPricesWithTax}) {
+  double _getDisplayUnitPrice(CartItem item, double basePrice,
+      {required bool showPricesWithTax}) {
     if (!showPricesWithTax) {
       return basePrice;
     }

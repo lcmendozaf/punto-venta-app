@@ -554,9 +554,13 @@ class _ReportsPageState extends State<ReportsPage>
   }
 
   void _showTicketPreview(CompletedOrder ticket) {
+    final reportsBloc = context.read<ReportsBloc>();
     showDialog(
       context: context,
-      builder: (context) => TicketPreviewDialog(ticket: ticket),
+      builder: (context) => BlocProvider.value(
+        value: reportsBloc,
+        child: TicketPreviewDialog(ticket: ticket),
+      ),
     );
   }
 }

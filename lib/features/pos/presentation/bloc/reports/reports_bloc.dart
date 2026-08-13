@@ -199,7 +199,19 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       ));
 
       if (currentState is ReportsLoaded) {
-        emit(currentState);
+        final updatedTickets = currentState.tickets.map((t) {
+          if (t.id == event.ticketId) {
+            return t.copyWith(isAnnulled: true);
+          }
+          return t;
+        }).toList();
+
+        emit(ReportsLoaded(
+          updatedTickets,
+          summary: currentState.summary,
+          hasMoreData: currentState.hasMoreData,
+          isLoadingMore: currentState.isLoadingMore,
+        ));
       }
     } catch (e) {
       String message = e.toString();
