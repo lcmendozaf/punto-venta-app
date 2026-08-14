@@ -132,16 +132,16 @@ void showAddPaymentMethodDialog({
   required Function(PaymentMethod pm, double defaultAmount) onMethodAdded,
 }) {
   final selectedIds = selectedPayments.map((pm) => pm.id).toSet();
-  final available =
-      allMethods.where((pm) => !selectedIds.contains(pm.id)).toList();
 
-  if (available.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Todos los métodos de pago ya han sido agregados.')),
-    );
-    return;
-  }
+  final available = allMethods.where((pm) {
+    final isCash = pm.description.toLowerCase().contains('efectivo') ||
+        pm.shortDescription.toLowerCase().contains('efectivo');
+    // Si es efectivo y ya está agregada exactamente esa misma opción (por ID), se filtra
+    if (isCash && selectedIds.contains(pm.id)) {
+      return false;
+    }
+    return true;
+  }).toList();
 
   showDialog(
     context: context,

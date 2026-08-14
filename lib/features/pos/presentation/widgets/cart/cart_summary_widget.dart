@@ -35,9 +35,14 @@ class CartSummary extends StatelessWidget {
             children: [
               Text(AppStrings.total,
                   style: Theme.of(context).textTheme.bodyMedium),
-              Text(totalConIva.formatToCurrency(),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.primary, fontWeight: FontWeight.bold)),
+              Text(
+                totalConIva.formatToCurrency(),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 25,
+                    ),
+              ),
             ],
           ),
           const SizedBox(height: AppDimensions.paddingS),

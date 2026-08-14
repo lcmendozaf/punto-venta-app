@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/payment_method.dart';
+import '../../../domain/entities/payment_method_config.dart';
 
 abstract class PaymentMethodsEvent extends Equatable {
   const PaymentMethodsEvent();
@@ -14,4 +15,11 @@ class SelectPaymentMethodEvent extends PaymentMethodsEvent {
   const SelectPaymentMethodEvent(this.paymentMethod);
   @override
   List<Object?> get props => [paymentMethod];
+}
+
+class SavePaymentMethodsConfigEvent extends PaymentMethodsEvent {
+  final PaymentMethodsConfig config;
+  const SavePaymentMethodsConfigEvent(this.config);
+  @override
+  List<Object?> get props => [config];
 }

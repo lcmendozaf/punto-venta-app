@@ -36,13 +36,17 @@ class _ConfirmationPanelState extends State<ConfirmationPanel> {
     final defaultPaymentMethod =
         pmState is PaymentMethodsLoaded ? pmState.selectedPaymentMethod : null;
 
+    final uiState = context.read<UiBloc>().state;
+    final isReturnMode =
+        uiState is UiLoaded ? uiState.isReturnMode : false;
+
     return BlocProvider(
       create: (context) => CheckoutConfirmationCubit(
         fetchReturnReasonsUsecase: di.sl(),
         calculateOrderTaxesUseCase: di.sl(),
         cartBloc: context.read<CartBloc>(),
         clientsBloc: context.read<ClientsBloc>(),
-      )..load(defaultPaymentMethod),
+      )..load(defaultPaymentMethod, isReturnMode: isReturnMode),
       child: BlocBuilder<CartBloc, CartState>(
         builder: (context, cartState) {
           if (cartState is! CartLoaded) {
@@ -81,16 +85,91 @@ class _ConfirmationPanelState extends State<ConfirmationPanel> {
                             ),
                             const SizedBox(width: AppDimensions.paddingS),
                             Expanded(
-                              child: Text(
-                                isReturnMode
-                                    ? 'Confirmar Devolución'
-                                    : 'Confirmar Pago',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    isReturnMode
+                                        ? 'Confirmar Devolución'
+                                        : 'Confirmar Pago',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  if (confirmationState.activeBranchName !=
+                                          null) ...[
+                                    const SizedBox(height: 2),
+                                    if (confirmationState
+                                            .allowedBranches.length >
+                                        1)
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.business_rounded,
+                                            size: 14,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          DropdownButtonHideUnderline(
+                                            child: DropdownButton<int>(
+                                              value: confirmationState
+                                                  .activeBranchId,
+                                              isDense: true,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey.shade700,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              icon: Icon(
+                                                Icons.arrow_drop_down_rounded,
+                                                size: 16,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                              items: confirmationState
+                                                  .allowedBranches
+                                                  .map((branch) {
+                                                return DropdownMenuItem<int>(
+                                                  value: branch.id,
+                                                  child: Text(branch.name),
+                                                );
+                                              }).toList(),
+                                              onChanged: (branchId) {
+                                                if (branchId != null) {
+                                                  context
+                                                      .read<
+                                                          CheckoutConfirmationCubit>()
+                                                      .selectBranch(branchId);
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    else
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.business_rounded,
+                                            size: 14,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Sucursal: ${confirmationState.activeBranchName}',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ],
                               ),
                             ),
                           ],
@@ -217,7 +296,7 @@ class _ConfirmationPanelState extends State<ConfirmationPanel> {
                                           'Confirmar',
                                           style: TextStyle(
                                             fontSize: 16,
-                                            fontWeight: FontWeight.bold,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                 ),

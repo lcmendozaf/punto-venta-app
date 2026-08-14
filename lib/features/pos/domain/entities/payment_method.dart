@@ -74,6 +74,7 @@ class PaymentMethod {
     String? deleteAt,
     double? amount,
     double? receivedAmount,
+    bool clearReceivedAmount = false,
     PaymentMethodDetails? details,
   }) {
     return PaymentMethod(
@@ -82,7 +83,7 @@ class PaymentMethod {
       shortDescription: shortDescription ?? this.shortDescription,
       deleteAt: deleteAt ?? this.deleteAt,
       amount: amount ?? this.amount,
-      receivedAmount: receivedAmount ?? this.receivedAmount,
+      receivedAmount: clearReceivedAmount ? null : (receivedAmount ?? this.receivedAmount),
       details: details ?? this.details,
     );
   }

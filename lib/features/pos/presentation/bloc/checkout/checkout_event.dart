@@ -22,6 +22,7 @@ class ProcessSale extends CheckoutEvent {
   final List<PaymentMethod>? paymentMethods;
   final double? receivedAmount;
   final double? change;
+  final int? branchId;
 
   const ProcessSale({
     required this.items,
@@ -34,6 +35,7 @@ class ProcessSale extends CheckoutEvent {
     this.paymentMethods,
     this.receivedAmount,
     this.change,
+    this.branchId,
   });
 
   @override
@@ -48,6 +50,7 @@ class ProcessSale extends CheckoutEvent {
         paymentMethods,
         receivedAmount,
         change,
+        branchId,
       ];
 }
 
@@ -59,13 +62,15 @@ class ConfirmReturn extends CheckoutEvent {
   final int reasonId;
   final List<CartItem> items;
   final List<CartLogEntry> logItems;
+  final int? branchId;
 
   const ConfirmReturn({
     required this.reasonId,
     required this.items,
     required this.logItems,
+    this.branchId,
   });
 
   @override
-  List<Object?> get props => [reasonId, items, logItems];
+  List<Object?> get props => [reasonId, items, logItems, branchId];
 }

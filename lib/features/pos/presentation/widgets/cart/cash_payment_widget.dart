@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/core/utils/extensions.dart';
@@ -7,12 +9,14 @@ class CashPaymentWidget extends StatefulWidget {
   final double totalAmount;
   final ValueChanged<double?> onAmountChanged;
   final ValueChanged<double?> onChangeCalculated;
+  final bool showTotalAmount;
 
   const CashPaymentWidget({
     super.key,
     required this.totalAmount,
     required this.onAmountChanged,
     required this.onChangeCalculated,
+    this.showTotalAmount = false,
   });
 
   @override
@@ -26,8 +30,13 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController();
+    final formatter = NumberFormat('#,##0.00', 'es_AR');
+    _amountController = TextEditingController(
+      text: formatter.format(widget.totalAmount),
+    );
     _amountController.addListener(_calculateChange);
+    // Calcular el vuelto inicial de forma diferida para evitar llamadas asincronas en initState
+    WidgetsBinding.instance.addPostFrameCallback((_) => _calculateChange());
   }
 
   @override
@@ -38,11 +47,12 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
 
   void _calculateChange() {
     final text = _amountController.text.trim();
-    final enteredAmount = text.isEmpty ? null : double.tryParse(text);
+    final enteredAmount = text.parseFormattedDouble();
 
     double changeValue = 0.0;
     if (enteredAmount != null) {
-      final calculated = enteredAmount - widget.totalAmount;
+      final calculated =
+          double.parse((enteredAmount - widget.totalAmount).toStringAsFixed(2));
       changeValue = calculated >= 0 ? calculated : 0.0;
     }
 
@@ -59,44 +69,48 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 12),
-        // Total a cobrar
-        Container(
-          padding: const EdgeInsets.all(AppDimensions.paddingM),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.3),
+        if (widget.showTotalAmount) ...[
+          const SizedBox(height: 12),
+          // Total a cobrar
+          Container(
+            padding: const EdgeInsets.all(AppDimensions.paddingM),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total a cobrar:',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                Text(
+                  widget.totalAmount.formatToCurrency(),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontSize: 18,
+                      ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total a cobrar:',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
-              Text(
-                widget.totalAmount.formatToCurrency(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      fontSize: 18,
-                    ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ] else
+          const SizedBox(height: 12),
 
         // Paga con
         Text(
           'Paga con:',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
         ),
         const SizedBox(height: 8),
@@ -104,6 +118,7 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
           controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           textInputAction: TextInputAction.done,
+          inputFormatters: [CurrencyInputFormatter()],
           onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
           decoration: InputDecoration(
             prefixIcon: const Icon(
@@ -120,6 +135,12 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
             ),
           ),
           style: const TextStyle(fontSize: 16),
+          onTap: () {
+            _amountController.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: _amountController.text.length,
+            );
+          },
         ),
         const SizedBox(height: 16),
 
@@ -179,12 +200,16 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
   }
 
   Widget _buildStatusIndicator() {
-    final enteredAmount = double.tryParse(_amountController.text) ?? 0.0;
-    final isInsufficient = enteredAmount < widget.totalAmount;
-    final isPerfect = enteredAmount == widget.totalAmount;
+    final enteredAmount =
+        _amountController.text.trim().parseFormattedDouble() ?? 0.0;
+    final roundedEntered = double.parse(enteredAmount.toStringAsFixed(2));
+    final roundedTotal = double.parse(widget.totalAmount.toStringAsFixed(2));
+
+    final isInsufficient = roundedEntered < roundedTotal;
+    final isPerfect = roundedEntered == roundedTotal;
 
     if (isInsufficient) {
-      final missing = widget.totalAmount - enteredAmount;
+      final missing = roundedTotal - roundedEntered;
       return Container(
         padding: const EdgeInsets.symmetric(
           horizontal: 12,

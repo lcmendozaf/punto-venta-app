@@ -16,6 +16,7 @@ class BranchResponseModel with _$BranchResponseModel {
     @JsonKey(name: 'per_vat_amount') int? perVatAmount,
     @JsonKey(name: 'default_iibb_tax_rate') int? defaultIibbTaxRate,
     @JsonKey(name: 'province_id') int? provinceId,
+    @JsonKey(name: 'priority') int? priority,
     @JsonKey(name: 'id') int? branchId,
   }) = _BranchResponseModel;
 

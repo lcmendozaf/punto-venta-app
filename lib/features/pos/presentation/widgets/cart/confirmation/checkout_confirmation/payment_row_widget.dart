@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
+import 'package:punto_venta_app/core/utils/extensions.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/payment_method.dart';
 
 class PaymentRowWidget extends StatelessWidget {
@@ -70,28 +73,36 @@ class PaymentRowWidget extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: amountController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Monto a pagar',
-                      prefixText: '\$ ',
-                      border: OutlineInputBorder(),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                if (!isCash)
+                  Expanded(
+                    child: TextFormField(
+                      controller: amountController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [CurrencyInputFormatter()],
+                      decoration: const InputDecoration(
+                        labelText: 'Monto a pagar',
+                        prefixText: '\$ ',
+                        border: OutlineInputBorder(),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      onChanged: onAmountChanged,
+                      onTap: () {
+                        amountController.selection = TextSelection(
+                          baseOffset: 0,
+                          extentOffset: amountController.text.length,
+                        );
+                      },
                     ),
-                    onChanged: onAmountChanged,
-                  ),
-                ),
-                if (isCash && receivedController != null) ...[
-                  const SizedBox(width: 12),
+                  )
+                else if (receivedController != null)
                   Expanded(
                     child: TextFormField(
                       controller: receivedController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [CurrencyInputFormatter()],
                       decoration: const InputDecoration(
                         labelText: 'Paga con (Recibido)',
                         prefixText: '\$ ',
@@ -100,9 +111,14 @@ class PaymentRowWidget extends StatelessWidget {
                             EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       onChanged: onReceivedAmountChanged,
+                      onTap: () {
+                        receivedController!.selection = TextSelection(
+                          baseOffset: 0,
+                          extentOffset: receivedController!.text.length,
+                        );
+                      },
                     ),
                   ),
-                ],
               ],
             ),
             if (detailsWidget != null) detailsWidget!,

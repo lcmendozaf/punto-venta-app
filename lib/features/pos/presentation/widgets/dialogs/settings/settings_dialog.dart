@@ -6,6 +6,7 @@ import 'package:punto_venta_app/features/pos/presentation/bloc/product/product_s
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/settings/pdv_settings_dialog.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/settings/printer_settings_dialog.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/settings/price_list_selector_dialog.dart';
+import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/settings/payment_methods_settings_dialog.dart';
 
 class SettingsDialog extends StatefulWidget {
   const SettingsDialog({super.key});
@@ -31,8 +32,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 children: [
                   ActionCard(
                     icon: Icons.print,
-                    iconColor: Colors.orange,
-                    backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                    iconColor: Colors.teal,
+                    backgroundColor: Colors.teal.withValues(alpha: 0.1),
                     title: 'Configurar impresoras',
                     subtitle: 'Configurar Ip de impresoras de tickets',
                     onTap: () {
@@ -44,8 +45,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   const SizedBox(height: 10),
                   ActionCard(
                     icon: Icons.attach_money,
-                    iconColor: Colors.green,
-                    backgroundColor: Colors.green.withValues(alpha: 0.1),
+                    iconColor: Colors.teal,
+                    backgroundColor: Colors.teal.withValues(alpha: 0.1),
                     title: 'Lista de Precios',
                     subtitle:
                         'Cambiar lista de precios activa (Actual: Lista $currentList)',
@@ -67,6 +68,19 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       final navigatorContext = Navigator.of(context).context;
                       Navigator.of(context).pop();
                       showPdvSettingsDialog(navigatorContext, true);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  ActionCard(
+                    icon: Icons.monetization_on_rounded,
+                    iconColor: Colors.teal,
+                    backgroundColor: Colors.teal.withValues(alpha: 0.1),
+                    title: 'Configurar Metodos de Pago',
+                    subtitle: 'Vincular metodos de pago con sucursales',
+                    onTap: () {
+                      final navigatorContext = Navigator.of(context).context;
+                      Navigator.of(context).pop();
+                      showPaymentMethodsSettingsDialog(navigatorContext);
                     },
                   ),
                 ],

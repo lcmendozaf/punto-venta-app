@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/payment_method.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/return_reason.dart';
+import 'package:punto_venta_app/features/pos/domain/entities/pdv_config.dart';
 
 class CheckoutConfirmationState extends Equatable {
   final bool isLoading;
@@ -14,6 +15,9 @@ class CheckoutConfirmationState extends Equatable {
   final List<PaymentMethod> selectedPayments;
   final double receivedAmount;
   final double change;
+  final int? activeBranchId;
+  final String? activeBranchName;
+  final List<Branch> allowedBranches;
 
   const CheckoutConfirmationState({
     this.isLoading = false,
@@ -27,6 +31,9 @@ class CheckoutConfirmationState extends Equatable {
     this.selectedPayments = const [],
     this.receivedAmount = 0.0,
     this.change = 0.0,
+    this.activeBranchId,
+    this.activeBranchName,
+    this.allowedBranches = const [],
   });
 
   double get totalAllocated =>
@@ -58,6 +65,10 @@ class CheckoutConfirmationState extends Equatable {
     List<PaymentMethod>? selectedPayments,
     double? receivedAmount,
     double? change,
+    int? activeBranchId,
+    String? activeBranchName,
+    List<Branch>? allowedBranches,
+    bool resetActiveBranch = false,
   }) {
     return CheckoutConfirmationState(
       isLoading: isLoading ?? this.isLoading,
@@ -71,6 +82,9 @@ class CheckoutConfirmationState extends Equatable {
       selectedPayments: selectedPayments ?? this.selectedPayments,
       receivedAmount: receivedAmount ?? this.receivedAmount,
       change: change ?? this.change,
+      activeBranchId: resetActiveBranch ? null : (activeBranchId ?? this.activeBranchId),
+      activeBranchName: resetActiveBranch ? null : (activeBranchName ?? this.activeBranchName),
+      allowedBranches: allowedBranches ?? this.allowedBranches,
     );
   }
 
@@ -87,5 +101,8 @@ class CheckoutConfirmationState extends Equatable {
         selectedPayments,
         receivedAmount,
         change,
+        activeBranchId,
+        activeBranchName,
+        allowedBranches,
       ];
 }

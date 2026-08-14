@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
+import 'package:punto_venta_app/core/utils/extensions.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/payment_method.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/payment_methods/payment_methods_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/payment_methods/payment_methods_event.dart';
@@ -9,8 +11,8 @@ import 'package:punto_venta_app/features/pos/presentation/bloc/payment_methods/p
 import 'package:punto_venta_app/features/pos/presentation/widgets/cart/cash_payment_widget.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/cart/payment_method_dialogs.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/cart/confirmation/checkout_confirmation/payment_method_details_controllers.dart';
-import 'package:punto_venta_app/features/pos/presentation/widgets/cart/confirmation/checkout_confirmation/payment_row_widget.dart';
-import 'package:punto_venta_app/features/pos/presentation/widgets/cart/confirmation/checkout_confirmation/payment_additional_details_widget.dart';
+import 'package:punto_venta_app/features/pos/presentation/widgets/cart/confirmation/checkout_confirmation/checkout_payment_row.dart';
+import 'package:punto_venta_app/features/pos/presentation/widgets/cart/confirmation/checkout_confirmation/checkout_payment_details_form.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/cart/confirmation/confirmation_helpers.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/cart/confirmation/checkout_confirmation/multiple_payments_section.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/cart/confirmation/checkout_confirmation/single_payment_section.dart';
@@ -49,7 +51,6 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
   final List<TextEditingController> _amountControllers = [];
   final List<TextEditingController> _receivedControllers = [];
   final List<PaymentMethodDetailsControllers> _detailsControllers = [];
-  final Set<int> _expandedPaymentDetails = {};
 
   @override
   void initState() {
@@ -82,18 +83,30 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
   }
 
   void _syncControllersAndText(List<PaymentMethod> payments) {
-    // 1. Sync length of amountControllers
+    final formatter = NumberFormat('#,##0.00', 'es_AR');
+
+    // 1. Sync length of amountControllers and pre-fill when newly created
     while (_amountControllers.length < payments.length) {
-      _amountControllers.add(TextEditingController());
+      final pm = payments[_amountControllers.length];
+      _amountControllers.add(TextEditingController(
+        text: pm.amount != null ? formatter.format(pm.amount!) : '',
+      ));
     }
     while (_amountControllers.length > payments.length) {
       _amountControllers.last.dispose();
       _amountControllers.removeLast();
     }
 
-    // 2. Sync length of receivedControllers
+    // 2. Sync length of receivedControllers and pre-fill when newly created
     while (_receivedControllers.length < payments.length) {
-      _receivedControllers.add(TextEditingController());
+      final pm = payments[_receivedControllers.length];
+      final isCash = pm.description.toLowerCase().contains('efectivo') ||
+          pm.shortDescription.toLowerCase().contains('efectivo');
+      _receivedControllers.add(TextEditingController(
+        text: isCash
+            ? formatter.format(pm.receivedAmount ?? pm.amount ?? 0.0)
+            : '',
+      ));
     }
     while (_receivedControllers.length > payments.length) {
       _receivedControllers.last.dispose();
@@ -114,22 +127,30 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
       final pm = payments[i];
 
       // Sync amount
-      final amountStr = pm.amount?.toStringAsFixed(2) ?? '';
-      final currentAmountParsed = double.tryParse(_amountControllers[i].text);
-      if (_amountControllers[i].text != amountStr &&
-          currentAmountParsed != pm.amount) {
-        _amountControllers[i].text = amountStr;
+      final double? modelAmount = pm.amount;
+      final String controllerText = _amountControllers[i].text;
+      final double? parsedAmount = controllerText.parseFormattedDouble();
+
+      if (controllerText.isEmpty &&
+          (modelAmount == null || modelAmount == 0.0)) {
+        // No sobrescribir si el usuario borró todo y el modelo es nulo o cero
+      } else if (parsedAmount != modelAmount) {
+        _amountControllers[i].text =
+            modelAmount != null ? formatter.format(modelAmount) : '';
       }
 
       // Sync received amount (for cash)
       final isCash = pm.description.toLowerCase().contains('efectivo') ||
           pm.shortDescription.toLowerCase().contains('efectivo');
       if (isCash) {
-        final rec = pm.receivedAmount ?? pm.amount ?? 0.0;
-        final recStr = rec.toStringAsFixed(2);
-        final currentRecParsed = double.tryParse(_receivedControllers[i].text);
-        if (_receivedControllers[i].text != recStr && currentRecParsed != rec) {
-          _receivedControllers[i].text = recStr;
+        final double rec = pm.receivedAmount ?? pm.amount ?? 0.0;
+        final String recControllerText = _receivedControllers[i].text;
+        final double? parsedRec = recControllerText.parseFormattedDouble();
+
+        if (recControllerText.isEmpty && pm.receivedAmount == null) {
+          // No sobrescribir si el usuario borró el valor recibido y el modelo es nulo
+        } else if (parsedRec != rec) {
+          _receivedControllers[i].text = formatter.format(rec);
         }
       }
 
@@ -156,93 +177,6 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
             details.verificationId ?? '';
       }
     }
-  }
-
-  void _updatePaymentDetails(int index,
-      PaymentMethodDetails Function(PaymentMethodDetails d) updateFn) {
-    final payments =
-        context.read<CheckoutConfirmationCubit>().state.selectedPayments;
-    if (index >= payments.length) return;
-    final currentDetails =
-        payments[index].details ?? const PaymentMethodDetails();
-    final updatedDetails = updateFn(currentDetails);
-    context
-        .read<CheckoutConfirmationCubit>()
-        .updatePaymentDetails(index, updatedDetails);
-  }
-
-  Widget _buildDetailsFormWidget(int index, PaymentMethod pm,
-      PaymentMethodDetailsControllers controllers) {
-    final isExpanded = _expandedPaymentDetails.contains(pm.id);
-
-    return PaymentAdditionalDetailsWidget(
-      paymentMethod: pm,
-      controllers: controllers,
-      isExpanded: isExpanded,
-      onExpansionToggled: () {
-        setState(() {
-          if (isExpanded) {
-            _expandedPaymentDetails.remove(pm.id);
-          } else {
-            _expandedPaymentDetails.add(pm.id);
-          }
-        });
-      },
-      onCheckNumberChanged: (val) {
-        _updatePaymentDetails(index, (d) => d.copyWith(checkNumber: val));
-      },
-      onTransferIdChanged: (val) {
-        _updatePaymentDetails(index, (d) => d.copyWith(transferId: val));
-      },
-      onVerificationIdChanged: (val) {
-        _updatePaymentDetails(index, (d) => d.copyWith(verificationId: val));
-      },
-    );
-  }
-
-  Widget _buildPaymentRowWidget(
-      int index, PaymentMethod pm, List<PaymentMethod> allAvailableMethods) {
-    final isCash = pm.description.toLowerCase().contains('efectivo') ||
-        pm.shortDescription.toLowerCase().contains('efectivo');
-    final controllers = _detailsControllers[index];
-
-    return PaymentRowWidget(
-      paymentMethod: pm,
-      amountController: _amountControllers[index],
-      receivedController: isCash ? _receivedControllers[index] : null,
-      icon: getPaymentMethodIcon(pm.description, pm.shortDescription),
-      showDeleteButton: context
-              .read<CheckoutConfirmationCubit>()
-              .state
-              .selectedPayments
-              .length >
-          1,
-      onDelete: () {
-        context
-            .read<CheckoutConfirmationCubit>()
-            .removePaymentMethod(index, widget.totalAmount);
-        final nextPayments =
-            context.read<CheckoutConfirmationCubit>().state.selectedPayments;
-        if (nextPayments.length == 1) {
-          context
-              .read<PaymentMethodsBloc>()
-              .add(SelectPaymentMethodEvent(nextPayments[0]));
-        }
-      },
-      onAmountChanged: (val) {
-        final double? parsed = double.tryParse(val);
-        context
-            .read<CheckoutConfirmationCubit>()
-            .updatePaymentAmount(index, parsed ?? 0.0, widget.totalAmount);
-      },
-      onReceivedAmountChanged: (val) {
-        final double? parsed = double.tryParse(val);
-        context
-            .read<CheckoutConfirmationCubit>()
-            .updatePaymentReceivedAmount(index, parsed, widget.totalAmount);
-      },
-      detailsWidget: _buildDetailsFormWidget(index, pm, controllers),
-    );
   }
 
   @override
@@ -279,12 +213,43 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
+                'Total a cobrar:',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+              ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppDimensions.paddingS),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.totalAmount.formatToCurrency(),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                          fontSize: 36,
+                        ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
                 'Métodos de Pago',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               BlocBuilder<PaymentMethodsBloc, PaymentMethodsState>(
                 builder: (context, pmState) {
                   if (pmState is PaymentMethodsLoading) {
@@ -354,8 +319,24 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
                       return MultiplePaymentsSection(
                         paymentRows: List.generate(
                           selectedPayments.length,
-                          (index) => _buildPaymentRowWidget(
-                              index, selectedPayments[index], paymentMethods),
+                          (index) {
+                            final pm = selectedPayments[index];
+                            final isCash = pm.description
+                                    .toLowerCase()
+                                    .contains('efectivo') ||
+                                pm.shortDescription
+                                    .toLowerCase()
+                                    .contains('efectivo');
+                            return CheckoutPaymentRow(
+                              index: index,
+                              paymentMethod: pm,
+                              amountController: _amountControllers[index],
+                              receivedController:
+                                  isCash ? _receivedControllers[index] : null,
+                              detailsControllers: _detailsControllers[index],
+                              totalAmount: widget.totalAmount,
+                            );
+                          },
                         ),
                         onAddMethodPressed: () => showAddPaymentMethodDialog(
                           context: context,
@@ -376,6 +357,16 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
                         change: change,
                       );
                     }
+
+                    final isCash = selected?.description
+                                .toLowerCase()
+                                .contains('efectivo') ==
+                            true ||
+                        selected?.shortDescription
+                                .toLowerCase()
+                                .contains('efectivo') ==
+                            true;
+
                     return SinglePaymentSection(
                       selectedPayment: selected,
                       onSelectorTap: () => showPaymentMethodsSelectorDialog(
@@ -389,10 +380,30 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
                               .add(SelectPaymentMethodEvent(pm));
                         },
                       ),
-                      detailsWidget: selectedPayments.isNotEmpty
-                          ? _buildDetailsFormWidget(
-                              0, selectedPayments[0], _detailsControllers[0])
-                          : null,
+                      detailsWidget: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (selectedPayments.isNotEmpty)
+                            CheckoutPaymentDetailsForm(
+                              index: 0,
+                              paymentMethod: selectedPayments[0],
+                              controllers: _detailsControllers[0],
+                            ),
+                          if (isCash) ...[
+                            CashPaymentWidget(
+                              key: ValueKey(widget.totalAmount),
+                              totalAmount: widget.totalAmount,
+                              onAmountChanged: (amount) {
+                                context
+                                    .read<CheckoutConfirmationCubit>()
+                                    .updatePaymentReceivedAmount(
+                                        0, amount, widget.totalAmount);
+                              },
+                              onChangeCalculated: (changeVal) {},
+                            ),
+                          ],
+                        ],
+                      ),
                       onAddMethodPressed: () => showAddPaymentMethodDialog(
                         context: context,
                         allMethods: paymentMethods,
@@ -425,18 +436,6 @@ class _CheckoutConfirmationViewState extends State<CheckoutConfirmationView> {
                   iibbAmount: widget.iibbAmount,
                   vatPerceptionAmount: widget.vatPerceptionAmount,
                   internalTaxAmount: widget.internalTaxAmount,
-                ),
-              if (selectedPayments.length <= 1)
-                CashPaymentWidget(
-                  key: ValueKey(widget.totalAmount),
-                  totalAmount: widget.totalAmount,
-                  onAmountChanged: (amount) {
-                    context
-                        .read<CheckoutConfirmationCubit>()
-                        .updatePaymentReceivedAmount(
-                            0, amount, widget.totalAmount);
-                  },
-                  onChangeCalculated: (changeVal) {},
                 ),
             ],
           );

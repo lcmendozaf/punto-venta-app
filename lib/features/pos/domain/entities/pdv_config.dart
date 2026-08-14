@@ -63,6 +63,7 @@ class Branch {
   final int? perVatAmount;
   final int? defaultIibbTaxRate;
   final int? provinceId;
+  final int? priority;
 
   const Branch({
     required this.id,
@@ -74,6 +75,7 @@ class Branch {
     this.perVatAmount,
     this.defaultIibbTaxRate,
     this.provinceId,
+    this.priority,
   });
 
   factory Branch.fromModel(dynamic model) {
@@ -87,6 +89,7 @@ class Branch {
       perVatAmount: model.perVatAmount,
       defaultIibbTaxRate: model.defaultIibbTaxRate,
       provinceId: model.provinceId,
+      priority: model.priority,
     );
   }
 }

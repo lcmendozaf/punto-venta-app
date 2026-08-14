@@ -28,7 +28,7 @@ class SinglePaymentSection extends StatelessWidget {
           onTap: onSelectorTap,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.all(AppDimensions.paddingM),
+            padding: const EdgeInsets.all(AppDimensions.paddingS),
             decoration: BoxDecoration(
               color: AppColors.success.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
@@ -39,7 +39,7 @@ class SinglePaymentSection extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),

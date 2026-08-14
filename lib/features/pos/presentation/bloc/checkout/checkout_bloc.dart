@@ -78,8 +78,9 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       // }
 
       // Obtener información de la sucursal y categoría IVA para determinar plantillas
-      final branch = config?.branchId != null
-          ? await branchLocalDataSource.getBranchById(config!.branchId!)
+      final branchIdToUse = event.branchId ?? config?.branchId;
+      final branch = branchIdToUse != null
+          ? await branchLocalDataSource.getBranchById(branchIdToUse)
           : null;
 
       final vatCategory = event.client?.vatCategoryId != null
@@ -168,7 +169,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         receivedAmount: event.receivedAmount,
         change: event.change,
         branchNumber: branchNumber,
-        branchId: config?.branchId,
+        branchId: branchIdToUse,
         templateType: templateType,
       );
 
@@ -209,7 +210,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         receivedAmount: event.receivedAmount,
         change: event.change,
         branchNumber: branchNumber,
-        branchId: config?.branchId,
+        branchId: branchIdToUse,
         description: description,
         templateType: templateType,
       );
@@ -258,7 +259,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
     try {
       final config = await pdvLocalDataSource.getPdvConfig();
-      final branchId = config?.branchId;
+      final branchId = event.branchId ?? config?.branchId;
       final deliveryLocationId = config?.pdvId;
 
       if (branchId == null || deliveryLocationId == null) {

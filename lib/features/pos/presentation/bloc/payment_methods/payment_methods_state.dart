@@ -11,6 +11,10 @@ class PaymentMethodsInitial extends PaymentMethodsState {}
 
 class PaymentMethodsLoading extends PaymentMethodsState {}
 
+class PaymentMethodsSaving extends PaymentMethodsState {}
+
+class PaymentMethodsConfigSaved extends PaymentMethodsState {}
+
 class PaymentMethodsLoaded extends PaymentMethodsState {
   final List<PaymentMethod> paymentMethods;
   final PaymentMethod? selectedPaymentMethod;
