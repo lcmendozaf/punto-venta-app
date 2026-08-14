@@ -72,10 +72,10 @@ class _ProductLabelsSearchBarState extends State<ProductLabelsSearchBar> {
       },
     );
   }
-
   Widget _buildCategoryDropdown(ProductLabelsLoaded state) {
     return DropdownButtonFormField<String>(
       value: _selectedCategoryId,
+      isExpanded: true,
       decoration: InputDecoration(
         labelText: 'Categoría',
         border: OutlineInputBorder(
@@ -90,12 +90,18 @@ class _ProductLabelsSearchBarState extends State<ProductLabelsSearchBar> {
       items: [
         const DropdownMenuItem(
           value: null,
-          child: Text('Todas las categorías'),
+          child: Text(
+            'Todas las categorías',
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         ...state.categories.where((cat) => cat.isNotEmpty).map((category) {
           return DropdownMenuItem(
             value: category,
-            child: Text(category),
+            child: Text(
+              category,
+              overflow: TextOverflow.ellipsis,
+            ),
           );
         }).toList(),
       ],

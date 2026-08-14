@@ -216,10 +216,13 @@ class InvoicePayload {
           ));
         }
 
+        final isRemove = cartLogItem.type == 'remove';
+        final double signedTaxAmount = isRemove ? -taxAmount : taxAmount;
+
         totalsByPercentage.update(
           taxPercentage,
-          (prev) => prev + taxAmount,
-          ifAbsent: () => taxAmount,
+          (prev) => prev + signedTaxAmount,
+          ifAbsent: () => signedTaxAmount,
         );
 
         // "item"
