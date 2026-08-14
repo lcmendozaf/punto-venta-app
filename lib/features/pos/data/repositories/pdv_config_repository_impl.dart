@@ -30,10 +30,10 @@ class PdvConfigRepositoryImpl implements PdvConfigRepository {
       );
 
       final finalData = PdvConfig(
-        pdvId: localConfig?.pdvId ?? remoteConfig.pdvId,
-        branchId: localConfig?.branchId ?? remoteConfig.branchId,
-        branchNumber: localConfig?.branchNumber ?? remoteConfig.branchNumber,
-        offlineMode: localConfig?.offlineMode ?? remoteConfig.offlineMode,
+        pdvId: remoteConfig.pdvId ?? localConfig?.pdvId,
+        branchId: remoteConfig.branchId ?? localConfig?.branchId,
+        branchNumber: remoteConfig.branchNumber ?? localConfig?.branchNumber,
+        offlineMode: remoteConfig.offlineMode ?? localConfig?.offlineMode,
       );
       await localDataSource.savePdvConfig(finalData);
       return finalData;
