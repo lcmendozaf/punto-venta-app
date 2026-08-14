@@ -15,6 +15,7 @@ import 'package:punto_venta_app/features/pos/domain/entities/pdv_config.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/payment_method_config.dart';
 import 'package:punto_venta_app/features/pos/domain/usecases/fetch_branches_usecase.dart';
 import 'package:punto_venta_app/features/pos/domain/usecases/fetch_payment_methods_config_usecase.dart';
+import 'package:punto_venta_app/features/pos/domain/usecases/fetch_pdv_config_usecase.dart';
 import 'package:punto_venta_app/features/pos/data/datasources/pdv_local_datasource.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
 import 'checkout_confirmation_state.dart';
@@ -59,7 +60,11 @@ class CheckoutConfirmationCubit extends Cubit<CheckoutConfirmationState> {
       // Cargar datos de sucursales y configuraciones de métodos de pago
       _allBranches = await di.sl<FetchBranchesUsecase>()();
       _paymentMethodsConfig = await di.sl<FetchPaymentMethodsConfigUsecase>()();
-      _pdvConfig = await di.sl<PdvLocalDataSource>().getPdvConfig();
+      try {
+        _pdvConfig = await di.sl<FetchPdvConfigUsecase>()();
+      } catch (_) {
+        _pdvConfig = await di.sl<PdvLocalDataSource>().getPdvConfig();
+      }
 
       emit(state.copyWith(
         returnReasons: reasons,
