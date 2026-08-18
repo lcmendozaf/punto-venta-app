@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_state.dart';
 import '../../../domain/entities/supplier.dart';
 import '../../../domain/entities/product.dart';
 
@@ -72,3 +73,40 @@ class SubmitSupplierPaymentEvent extends SupplierPaymentsEvent {
 }
 
 class ResetSupplierPaymentFormEvent extends SupplierPaymentsEvent {}
+
+class SaveSupplierDraftEvent extends SupplierPaymentsEvent {
+  final int supplierId;
+  final List<SelectedPaymentItem> items;
+  final double totalPaid;
+  final double total;
+  final int? remitoNumber;
+  final int? supplierTicket;
+
+  const SaveSupplierDraftEvent({
+    required this.supplierId,
+    required this.items,
+    required this.totalPaid,
+    required this.total,
+    this.remitoNumber,
+    this.supplierTicket,
+  });
+
+  @override
+  List<Object?> get props => [
+        supplierId,
+        items,
+        totalPaid,
+        total,
+        remitoNumber,
+        supplierTicket,
+      ];
+}
+
+class DiscardSupplierDraftEvent extends SupplierPaymentsEvent {
+  final int supplierId;
+
+  const DiscardSupplierDraftEvent({required this.supplierId});
+
+  @override
+  List<Object?> get props => [supplierId];
+}

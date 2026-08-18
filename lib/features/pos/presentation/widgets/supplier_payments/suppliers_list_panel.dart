@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
+import 'package:punto_venta_app/features/pos/domain/entities/supplier.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_bloc.dart';
-import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_event.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_state.dart';
 
 class SuppliersListPanel extends StatefulWidget {
-  final VoidCallback onSupplierSelected;
+  final Function(Supplier?) onSupplierSelected;
 
   const SuppliersListPanel({
     super.key,
@@ -132,11 +132,8 @@ class _SuppliersListPanelState extends State<SuppliersListPanel> {
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         onTap: () {
-                          widget.onSupplierSelected();
-                          context.read<SupplierPaymentsBloc>().add(
-                                SelectSupplierEvent(
-                                    isSelected ? null : supplier),
-                              );
+                          widget
+                              .onSupplierSelected(isSelected ? null : supplier);
                         },
                         title: Text(
                           supplier.name,

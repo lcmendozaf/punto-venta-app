@@ -23,6 +23,8 @@ class SupplierPaymentsBloc
     on<UpdateDocumentNumbersEvent>(_onUpdateDocuments);
     on<SubmitSupplierPaymentEvent>(_onSubmitPayment);
     on<ResetSupplierPaymentFormEvent>(_onResetForm);
+    on<SaveSupplierDraftEvent>(_onSaveDraft);
+    on<DiscardSupplierDraftEvent>(_onDiscardDraft);
   }
 
   Future<void> _onLoadSuppliers(
@@ -40,15 +42,40 @@ class SupplierPaymentsBloc
 
   void _onSelectSupplier(
       SelectSupplierEvent event, Emitter<SupplierPaymentsState> emit) {
-    emit(state.copyWith(
-      selectedSupplier: event.supplier,
-      clearSelectedSupplier: event.supplier == null,
-      items: [],
-      totalPaid: 0.0,
-      total: 0.0,
-      clearDocuments: true,
-      status: SupplierPaymentStatus.initial,
-    ));
+    if (event.supplier == null) {
+      emit(state.copyWith(
+        selectedSupplier: null,
+        clearSelectedSupplier: true,
+        items: const [],
+        totalPaid: 0.0,
+        total: 0.0,
+        clearDocuments: true,
+        status: SupplierPaymentStatus.initial,
+      ));
+      return;
+    }
+
+    final draft = state.drafts[event.supplier!.id];
+    if (draft != null) {
+      emit(state.copyWith(
+        selectedSupplier: event.supplier,
+        items: draft.items,
+        totalPaid: draft.totalPaid,
+        total: draft.total,
+        remitoNumber: draft.remitoNumber,
+        supplierTicket: draft.providerTicket,
+        status: SupplierPaymentStatus.initial,
+      ));
+    } else {
+      emit(state.copyWith(
+        selectedSupplier: event.supplier,
+        items: const [],
+        totalPaid: 0.0,
+        total: 0.0,
+        clearDocuments: true,
+        status: SupplierPaymentStatus.initial,
+      ));
+    }
   }
 
   void _onAddProduct(
@@ -152,7 +179,14 @@ class SupplierPaymentsBloc
       );
 
       await makePayment(request);
-      emit(state.copyWith(status: SupplierPaymentStatus.success));
+
+      final updatedDrafts = Map<int, SupplierPaymentDraft>.from(state.drafts);
+      updatedDrafts.remove(state.selectedSupplier!.id);
+
+      emit(state.copyWith(
+        status: SupplierPaymentStatus.success,
+        drafts: updatedDrafts,
+      ));
     } catch (e) {
       emit(state.copyWith(
           status: SupplierPaymentStatus.error, errorMessage: e.toString()));
@@ -163,11 +197,31 @@ class SupplierPaymentsBloc
       Emitter<SupplierPaymentsState> emit) {
     emit(state.copyWith(
       clearSelectedSupplier: true,
-      items: [],
+      items: const [],
       totalPaid: 0.0,
       total: 0.0,
       clearDocuments: true,
       status: SupplierPaymentStatus.initial,
     ));
+  }
+
+  void _onSaveDraft(
+      SaveSupplierDraftEvent event, Emitter<SupplierPaymentsState> emit) {
+    final updatedDrafts = Map<int, SupplierPaymentDraft>.from(state.drafts);
+    updatedDrafts[event.supplierId] = SupplierPaymentDraft(
+      items: event.items,
+      totalPaid: event.totalPaid,
+      total: event.total,
+      remitoNumber: event.remitoNumber,
+      providerTicket: event.supplierTicket,
+    );
+    emit(state.copyWith(drafts: updatedDrafts));
+  }
+
+  void _onDiscardDraft(
+      DiscardSupplierDraftEvent event, Emitter<SupplierPaymentsState> emit) {
+    final updatedDrafts = Map<int, SupplierPaymentDraft>.from(state.drafts);
+    updatedDrafts.remove(event.supplierId);
+    emit(state.copyWith(drafts: updatedDrafts));
   }
 }

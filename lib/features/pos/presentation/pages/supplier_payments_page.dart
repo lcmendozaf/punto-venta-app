@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/features/auth/prensetation/bloc/auth_bloc.dart';
 import 'package:punto_venta_app/features/auth/prensetation/bloc/auth_state.dart';
+import 'package:punto_venta_app/features/pos/domain/entities/supplier.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_event.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_state.dart';
@@ -41,6 +43,66 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
     _totalChargedController.clear();
   }
 
+  void _changeSupplier(Supplier? newSupplier) async {
+    final bloc = context.read<SupplierPaymentsBloc>();
+    final state = bloc.state;
+    final currentSupplier = state.selectedSupplier;
+
+    // Check if there are unsaved changes
+    final hasUnsavedChanges = currentSupplier != null &&
+        (state.items.isNotEmpty || state.totalPaid > 0 || state.total > 0);
+
+    if (hasUnsavedChanges && currentSupplier.id != newSupplier?.id) {
+      final result = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Cambio de Proveedor'),
+          content: Text(
+            'Tienes cambios cargados para ${currentSupplier.name}.\n'
+            '¿Deseas guardar un borrador para este proveedor antes de cambiar?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'cancel'),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'discard'),
+              child: const Text('Descartar', style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, 'save'),
+              child: const Text('Guardar Borrador'),
+            ),
+          ],
+        ),
+      );
+
+      if (result == 'cancel' || result == null) {
+        return;
+      }
+
+      if (result == 'save') {
+        bloc.add(
+          SaveSupplierDraftEvent(
+            supplierId: currentSupplier.id,
+            items: state.items,
+            totalPaid: state.totalPaid,
+            total: state.total,
+            remitoNumber: state.remitoNumber,
+            supplierTicket: state.providerTicket,
+          ),
+        );
+      } else if (result == 'discard') {
+        bloc.add(DiscardSupplierDraftEvent(supplierId: currentSupplier.id));
+      }
+    }
+
+    _resetForms();
+    if (!mounted) return;
+    bloc.add(SelectSupplierEvent(newSupplier));
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -48,6 +110,10 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       body: BlocListener<SupplierPaymentsBloc, SupplierPaymentsState>(
+        listenWhen: (previous, current) {
+          return previous.selectedSupplier?.id != current.selectedSupplier?.id ||
+              previous.status != current.status;
+        },
         listener: (context, state) {
           if (state.status == SupplierPaymentStatus.success) {
             _resetForms();
@@ -70,6 +136,18 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
                 behavior: SnackBarBehavior.floating,
               ),
             );
+          } else {
+            // Selected supplier changed (due to loading a draft or initial/reset)
+            if (state.selectedSupplier != null) {
+              final formatter = NumberFormat('#,##0.00', 'es_AR');
+              if (state.totalPaid > 0) {
+                _totalPaidController.text = formatter.format(state.totalPaid);
+              } else {
+                _totalPaidController.clear();
+              }
+            } else {
+              _resetForms();
+            }
           }
         },
         child: Row(
@@ -78,7 +156,7 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
             Expanded(
               flex: 4,
               child: SuppliersListPanel(
-                onSupplierSelected: _resetForms,
+                onSupplierSelected: _changeSupplier,
               ),
             ),
             VerticalDivider(
@@ -135,7 +213,7 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
               // Header
               SupplierPaymentHeader(
                 supplier: provider,
-                onDeselected: _resetForms,
+                onDeselected: () => _changeSupplier(null),
               ),
               const SizedBox(height: AppDimensions.paddingM),
 

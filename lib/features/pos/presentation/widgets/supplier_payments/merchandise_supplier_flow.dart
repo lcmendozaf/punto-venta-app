@@ -421,6 +421,12 @@ class _MerchandiseSupplierFlowState extends State<MerchandiseSupplierFlow> {
                       filteredProducts[isQueryEmpty ? index - 1 : index];
                   final purchasePrice = product.purchasePrice ?? 0.0;
 
+                  final existingItemIndex = widget.state.items
+                      .indexWhere((i) => i.product.id == product.id);
+                  final double quantityInCart = existingItemIndex >= 0
+                      ? widget.state.items[existingItemIndex].quantity
+                      : 0.0;
+
                   return ListTile(
                     onTap: () {
                       context.read<SupplierPaymentsBloc>().add(
@@ -445,7 +451,33 @@ class _MerchandiseSupplierFlowState extends State<MerchandiseSupplierFlow> {
                             : AppColors.textSecondary,
                       ),
                     ),
-                    trailing: const Icon(Icons.add, color: AppColors.primary),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (quantityInCart > 0) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: AppColors.primary, width: 1),
+                            ),
+                            child: Text(
+                              '${quantityInCart % 1 == 0 ? quantityInCart.toInt() : quantityInCart} unid.',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        const Icon(Icons.add, color: AppColors.primary),
+                      ],
+                    ),
                   );
                 },
               );

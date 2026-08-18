@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/supplier.dart';
-import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_bloc.dart';
-import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_event.dart';
 
 class SupplierPaymentHeader extends StatelessWidget {
   final Supplier supplier;
@@ -84,9 +81,6 @@ class SupplierPaymentHeader extends StatelessWidget {
             ),
             onPressed: () {
               onDeselected();
-              context
-                  .read<SupplierPaymentsBloc>()
-                  .add(const SelectSupplierEvent(null));
             },
             icon: const Icon(Icons.close, size: 18),
             label: const Text('Deseleccionar'),
