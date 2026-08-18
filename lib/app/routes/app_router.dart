@@ -19,6 +19,9 @@ import 'package:punto_venta_app/features/splash/presentation/pages/splash_page.d
 import 'package:punto_venta_app/features/stock/presentation/pages/stock_management_page.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
 import 'route_paths.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_bloc.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_event.dart';
+import 'package:punto_venta_app/features/pos/presentation/pages/supplier_payments_page.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -95,6 +98,16 @@ class AppRouter {
               return BlocProvider(
                 create: (_) => di.sl<SettlementsBloc>(),
                 child: const PendingSettlementsPage(),
+              );
+            },
+          ),
+          GoRoute(
+            path: RoutePaths.supplierPayments,
+            builder: (BuildContext context, GoRouterState state) {
+              return BlocProvider(
+                create: (_) =>
+                    di.sl<SupplierPaymentsBloc>()..add(LoadSuppliersEvent()),
+                child: const SupplierPaymentsPage(),
               );
             },
           ),

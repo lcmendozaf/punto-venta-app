@@ -23,6 +23,7 @@ class Product extends Equatable {
   final double? regularPrice; // precio anterior (solo mostrar tachado si hay oferta)
   final bool isOnSale; // true si está en oferta, false si no
   final List<BarcodeModel>? barcodes;
+  final double? purchasePrice;
 
   const Product({
     required this.id,
@@ -45,6 +46,7 @@ class Product extends Equatable {
     this.regularPrice,
     required this.isOnSale,
     this.barcodes,
+    this.purchasePrice,
   });
 
   String get idStr => id.toString();
@@ -75,5 +77,6 @@ class Product extends Equatable {
         regularPrice,
         isOnSale,
         barcodes,
+        purchasePrice,
       ];
 }

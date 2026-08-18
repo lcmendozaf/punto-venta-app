@@ -118,6 +118,14 @@ import 'features/auth/domain/usecases/login_with_email_usecase.dart';
 import 'features/auth/domain/usecases/select_company_usecase.dart';
 import 'features/auth/domain/usecases/logout_usecase.dart';
 import 'features/pos/data/repositories/product_repository_impl.dart';
+
+import 'package:punto_venta_app/features/pos/data/datasources/supplier_local_datasource.dart';
+import 'package:punto_venta_app/features/pos/data/datasources/supplier_remote_datasource.dart';
+import 'package:punto_venta_app/features/pos/data/repositories/supplier_repository_impl.dart';
+import 'package:punto_venta_app/features/pos/domain/repositories/supplier_repository.dart';
+import 'package:punto_venta_app/features/pos/domain/usecases/get_suppliers_usecase.dart';
+import 'package:punto_venta_app/features/pos/domain/usecases/make_supplier_payment_usecase.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_bloc.dart';
 import 'features/pos/data/repositories/saved_orders_repository_impl.dart';
 import 'features/pos/domain/usecases/get_products_usecase.dart';
 import 'features/pos/domain/usecases/manage_cart_usecase.dart';
@@ -230,6 +238,10 @@ Future<void> init() async {
         priceListLocalDataSource: sl(),
         pdvLocalDataSource: sl(),
       ));
+  sl.registerFactory(() => SupplierPaymentsBloc(
+        getSuppliers: sl(),
+        makePayment: sl(),
+      ));
   sl.registerFactory(() => PaymentMethodsBloc(
         fetchPaymentMethods: sl(),
         fetchPaymentMethodsConfig: sl(),
@@ -279,6 +291,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetClientsUsecase(sl()));
   sl.registerLazySingleton(() => AddClientUsecase(sl()));
   sl.registerLazySingleton(() => DeleteClientUsecase(sl()));
+  sl.registerLazySingleton(() => GetSuppliersUsecase(sl()));
+  sl.registerLazySingleton(() => MakeSupplierPaymentUsecase(sl()));
   sl.registerLazySingleton(() => GetTaxesUsecase(sl()));
   sl.registerLazySingleton(() => GetVatCategoriesUsecase(sl()));
   sl.registerLazySingleton(() => SendInvoiceUseCase(sl()));
@@ -330,6 +344,12 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<ClientRepository>(
     () => ClientRepositoryImpl(
+      localDataSource: sl(),
+      remoteDataSource: sl(),
+    ),
+  );
+  sl.registerLazySingleton<SupplierRepository>(
+    () => SupplierRepositoryImpl(
       localDataSource: sl(),
       remoteDataSource: sl(),
     ),
@@ -458,6 +478,14 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<ClientRemoteDataSource>(
     () => ClientRemoteDataSourceImpl(),
+  );
+  sl.registerLazySingleton<SupplierLocalDataSource>(
+      () => SupplierLocalDataSourceImpl(sharedPreferences: sl()));
+  sl.registerLazySingleton<SupplierService>(
+    () => SupplierService(sl()),
+  );
+  sl.registerLazySingleton<SupplierRemoteDataSource>(
+    () => SupplierRemoteDataSourceImpl(),
   );
   sl.registerLazySingleton<TaxLocalDataSource>(
       () => TaxLocalDataSourceImpl(sharedPreferences: sl()));

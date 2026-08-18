@@ -124,6 +124,22 @@ class _AppSidebarState extends State<AppSidebar> {
                   onTap: () => _navigateTo(context, RoutePaths.productLabels),
                 ),
               ),
+              const SizedBox(height: 8),
+              _buildNavItem(
+                context,
+                isSelected: widget.currentRoute == RoutePaths.supplierPayments,
+                isDark: isDark,
+                sidebarSurface: sidebarSurface,
+                child: SidebarItem(
+                  isDisabled: true,
+                  icon: Icons.local_shipping_outlined,
+                  isHighlighted:
+                      widget.currentRoute == RoutePaths.supplierPayments,
+                  tooltip: 'Pagos a Proveedores',
+                  onTap: () =>
+                      _navigateTo(context, RoutePaths.supplierPayments),
+                ),
+              ),
               if (widget.isAdmin) ...[
                 const SizedBox(height: 8),
                 // Cobradores Pendientes (fixed)
