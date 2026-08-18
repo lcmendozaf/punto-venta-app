@@ -538,6 +538,12 @@ class CheckoutConfirmationCubit extends Cubit<CheckoutConfirmationState> {
   }
 
   @override
+  void emit(CheckoutConfirmationState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _cartSubscription.cancel();
     _clientsSubscription.cancel();

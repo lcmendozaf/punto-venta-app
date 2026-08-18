@@ -26,15 +26,16 @@ class ProductModel with _$ProductModel {
     @JsonKey(name: 'suspended_for_purchase') String? suspendedForPurchase,
     @JsonKey(name: 'is_active') String? isActive,
     @JsonKey(name: 'category_description') String? categoryDescription,
+    @JsonKey(name: 'purchase_price', fromJson: _doubleFromJson) double? purchasePrice,
+
     // Se agregan despues con un copywith (depende de la lista de precios actual)
-    @JsonKey(name: 'regular_price')
+    @JsonKey(name: 'regular_price', fromJson: _doubleFromJson)
     double?
         regularPrice, // precio anterior (solo mostrar tachado si hay oferta)
-    @JsonKey(name: 'price')
+    @JsonKey(name: 'price', fromJson: _doubleFromJson)
     double? price, // precio actual (siempre mostrar este)
-    @JsonKey(name: 'is_on_sale') int? isOnSale, // 1 si está en oferta, 0 si no
+    @JsonKey(name: 'is_on_sale', fromJson: _intFromJson) int? isOnSale, // 1 si está en oferta, 0 si no
     @JsonKey(name: 'barcodes') List<BarcodeModel>? barcodes,
-    @JsonKey(name: 'purchase_price') double? purchasePrice,
   }) = _ProductModel;
 
   factory ProductModel.fromJson(Map<String, dynamic> json) =>
@@ -43,7 +44,7 @@ class ProductModel with _$ProductModel {
   Product toEntity() {
     double? priceValue;
     try {
-      if (price != null && price != '-') {
+      if (price != null) {
         priceValue = price;
       }
     } catch (e) {
@@ -99,4 +100,23 @@ class ProductModel with _$ProductModel {
       purchasePrice: product.purchasePrice,
     );
   }
+}
+
+double? _doubleFromJson(dynamic val) {
+  if (val == null) return null;
+  if (val is num) return val.toDouble();
+  if (val is String) {
+    if (val == '-' || val == 'null' || val.trim().isEmpty) return null;
+    return double.tryParse(val);
+  }
+  return null;
+}
+
+int? _intFromJson(dynamic val) {
+  if (val == null) return null;
+  if (val is num) return val.toInt();
+  if (val is String) {
+    return int.tryParse(val);
+  }
+  return null;
 }

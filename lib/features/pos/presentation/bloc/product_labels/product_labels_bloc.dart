@@ -54,7 +54,7 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
 
       await getProductsUsecase.updatePriceList(currentList);
 
-      final products = await getProductsUsecase();
+      final products = await getProductsUsecase().last;
       final categories = await getProductsUsecase.getCategories();
 
       emit(ProductLabelsLoaded(

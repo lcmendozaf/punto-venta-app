@@ -19,12 +19,12 @@ class StockRepositoryImpl implements StockRepository {
 
   @override
   Future<List<Product>> getAllProducts() async {
-    return await productRepository.getProducts();
+    return await productRepository.getProducts().last;
   }
 
   @override
   Future<Product?> getProductByCodigo(int codigo) async {
-    final products = await productRepository.getProducts();
+    final products = await productRepository.getProducts().last;
     try {
       return products.firstWhere((p) => p.id == codigo);
     } catch (e) {

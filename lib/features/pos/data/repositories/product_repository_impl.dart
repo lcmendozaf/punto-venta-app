@@ -8,9 +8,11 @@ class ProductRepositoryImpl implements ProductRepository {
   ProductRepositoryImpl({required this.localDataSource});
 
   @override
-  Future<List<Product>> getProducts() async {
-    final productModels = await localDataSource.getProducts();
-    return productModels.map((model) => model.toEntity()).toList();
+  Stream<List<Product>> getProducts() {
+    return localDataSource.getProducts().map(
+          (productModels) =>
+              productModels.map((model) => model.toEntity()).toList(),
+        );
   }
 
   @override

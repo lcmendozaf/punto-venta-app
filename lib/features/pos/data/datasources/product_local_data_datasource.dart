@@ -1,58 +1,96 @@
 import 'package:dio/dio.dart';
-import 'package:retrofit/retrofit.dart';
-import 'package:punto_venta_app/features/pos/data/models/category_model.dart';
-import 'package:punto_venta_app/features/pos/data/models/product_model.dart';
-import 'package:punto_venta_app/features/pos/data/models/precio_articulo_model.dart';
-import 'package:punto_venta_app/features/pos/data/models/barcode_model.dart';
 import 'package:punto_venta_app/core/network/error_handler.dart';
+import 'package:punto_venta_app/features/pos/data/models/barcode_model.dart';
+import 'package:punto_venta_app/features/pos/data/models/category_model.dart';
+import 'package:punto_venta_app/features/pos/data/models/precio_articulo_model.dart';
+import 'package:punto_venta_app/features/pos/data/models/product_model.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
+import 'package:retrofit/retrofit.dart';
 
 part 'product_local_data_datasource.g.dart';
+
+// =============================================================================
+// Retrofit API Service
+// =============================================================================
 
 @RestApi()
 abstract class ProductService {
   factory ProductService(Dio dio, {String baseUrl}) = _ProductService;
 
   @GET('/articles/')
-  Future<List<ProductModel>> getProducts(
-      {@Query('skip') int skip = 0, @Query('limit') int limit = 10000});
+  Future<List<ProductModel>> getProducts({
+    @Query('skip') int skip = 0,
+    @Query('limit') int limit = 1000,
+    @Query('is_suspended_sale') String? isSuspendedSale,
+    @Query('list_id') int? listId,
+  });
 
   @GET('/barcodes/')
-  Future<List<BarcodeModel>> getBarcodes(
-      {@Query('skip') int skip = 0, @Query('limit') int limit = 10000});
+  Future<List<BarcodeModel>> getBarcodes({
+    @Query('skip') int skip = 0,
+    @Query('limit') int limit = 10000,
+  });
 
   @GET('/prices_list/')
-  Future<List<PrecioArticuloModel>> getPricesList(
-      {@Query('skip') int skip = 0, @Query('limit') int limit = 10000});
+  Future<List<PrecioArticuloModel>> getPricesList({
+    @Query('skip') int skip = 0,
+    @Query('limit') int limit = 10000,
+  });
 
   @GET('/categories/')
-  Future<List<CategoryModel>> getCategories(
-      {@Query('skip') int skip = 0, @Query('limit') int limit = 10000});
+  Future<List<CategoryModel>> getCategories({
+    @Query('skip') int skip = 0,
+    @Query('limit') int limit = 10000,
+  });
 }
 
+// =============================================================================
+// Local Data Source Interface
+// =============================================================================
+
 abstract class ProductLocalDataSource {
-  Future<List<ProductModel>> getProducts();
+  Stream<List<ProductModel>> getProducts();
   Future<List<ProductModel>> getProductsByCategory(String category);
   Future<List<ProductModel>> searchProducts(String query);
   Future<ProductModel?> searchByBarcode(String barcode);
   Future<List<CategoryModel>> getCategories();
+
+  // Legacy / Compatibility methods
   Future<List<PrecioArticuloModel>> getPreciosArticulos();
   Future<Map<int, PrecioArticuloModel>> getPreciosByLista(int listaPrecio);
+
   void setListaPrecio(int lista);
   int getListaPrecio();
 }
 
+// =============================================================================
+// Local Data Source Implementation
+// =============================================================================
+
 class ProductLocalDataSourceImpl implements ProductLocalDataSource {
-  ProductService get _apiService => di.sl<ProductService>();
-  List<ProductModel>? _cachedProducts;
-  List<PrecioArticuloModel>? _cachedPrecios;
-  List<BarcodeModel>? _cachedBarcodes;
-  List<CategoryModel>? _cachedCategories;
+  final ProductService _apiService;
   int _listaActual;
+
+  // Raw API response caches
+  List<ProductModel>? _cachedProducts;
+  List<BarcodeModel>? _cachedBarcodes;
+  List<PrecioArticuloModel>? _cachedPrecios;
+  List<CategoryModel>? _cachedCategories;
+
+  // Optimized lookup caches
+  List<ProductModel>? _cachedMappedProducts;
+  Map<String, ProductModel>? _cachedBarcodeToProductMap;
+  bool _isAllProductsLoaded = false;
 
   ProductLocalDataSourceImpl({
     int listaInicial = 1,
-  })  : _listaActual = listaInicial;
+    ProductService? apiService,
+  })  : _listaActual = listaInicial,
+        _apiService = apiService ?? di.sl<ProductService>();
+
+  // ---------------------------------------------------------------------------
+  // Price List Getters & Setters
+  // ---------------------------------------------------------------------------
 
   @override
   int getListaPrecio() => _listaActual;
@@ -63,81 +101,21 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
     clearCache();
   }
 
-  Future<List<BarcodeModel>> _fetchBarcodes() async {
-    if (_cachedBarcodes != null) {
-      return _cachedBarcodes!;
-    }
-
-    try {
-      _cachedBarcodes = await _apiService.getBarcodes();
-      return _cachedBarcodes!;
-    } catch (e) {
-      _cachedBarcodes = [];
-      return _cachedBarcodes!;
-    }
-  }
-
-  // get productos sin precios ni códigos de barras
-  Future<List<ProductModel>> _fetchProducts() async {
-    if (_cachedProducts != null) {
-      return _cachedProducts!;
-    }
-
-    try {
-      final products = await _apiService.getProducts();
-
-      // se filtran los productos no suspendidos para la venta (suspendedForSale == 'N')
-      _cachedProducts =
-          products.where((product) => product.suspendedForSale == 'N').toList();
-
-      return _cachedProducts!;
-    } catch (e) {
-      throw Exception(ErrorHandler.handleError(e,
-          defaultMessage: 'Error al cargar productos'));
-    }
-  }
-
-  // get Lista de precios de articulos
-  @override
-  Future<List<PrecioArticuloModel>> getPreciosArticulos() async {
-    if (_cachedPrecios != null) {
-      return _cachedPrecios!;
-    }
-
-    try {
-      _cachedPrecios = await _apiService.getPricesList();
-      return _cachedPrecios!;
-    } catch (e) {
-      throw Exception(ErrorHandler.handleError(e,
-          defaultMessage: 'Error al cargar precios'));
-    }
-  }
-
-  // get precios por lista de precios, se filtran los precios por el id de la lista de precios actual
-  @override
-  Future<Map<int, PrecioArticuloModel>> getPreciosByLista(
-      int listaPrecio) async {
-    final precios = await getPreciosArticulos();
-
-    final preciosByProducto = <int, PrecioArticuloModel>{};
-
-    for (var precio in precios) {
-      if (precio.listId == listaPrecio) {
-        preciosByProducto[precio.productId] = precio;
-      }
-    }
-
-    return preciosByProducto;
-  }
+  // ---------------------------------------------------------------------------
+  // Core Business Methods
+  // ---------------------------------------------------------------------------
 
   @override
-  // se traen los productos y codigos de barras y precios según la lista de precios actual
-  Future<List<ProductModel>> getProducts() async {
-    // se traen los productos, códigos de barras y precios (si falla la carga de precios, se traen igual pero sin precios)
-    final products = await _fetchProducts();
+  Stream<List<ProductModel>> getProducts() async* {
+    if (_cachedMappedProducts != null && _isAllProductsLoaded) {
+      yield _cachedMappedProducts!;
+      return;
+    }
+
+    // Se traen todos los códigos de barras en paralelo una única vez
     final barcodes = await _fetchBarcodes();
 
-    // se agrupan los códigos de barras por producto para facilitar la asignación a cada producto
+    // Agrupar los códigos de barras por id de producto para una asociación rápida
     final barcodesByProduct = <int, List<BarcodeModel>>{};
     for (var barcode in barcodes) {
       if (!barcodesByProduct.containsKey(barcode.articleId)) {
@@ -146,59 +124,87 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
       barcodesByProduct[barcode.articleId]!.add(barcode);
     }
 
-    // se traen los precios según la lista de precios actual
-    Map<int, PrecioArticuloModel>? prices;
-    try {
-      prices = await getPreciosByLista(_listaActual);
-    } catch (e) {
-      prices = null;
-    }
+    const int chunkSize = 300;
+    int skip = 0;
+    bool hasMore = true;
 
-    // se asignan los códigos de barras y precios a cada producto
-    return products.map((product) {
-      final productBarcodes = barcodesByProduct[product.id] ?? [];
-      final price = prices?[product.id];
-      final fractional = product.fractional ?? 1;
+    // Inicializar cachés si es la primera carga
+    _cachedMappedProducts ??= [];
+    _cachedBarcodeToProductMap ??= {};
 
-      // precio y precio regular con la cantidad fracional
-      final productPrice = price?.priceAsDouble == null
-          ? null
-          : price!.priceAsDouble * fractional;
-      final productRegularPrice = price?.regularPriceAsDouble == null
-          ? null
-          : price!.regularPriceAsDouble * fractional;
+    while (hasMore) {
+      try {
+        final productsChunk = await _apiService.getProducts(
+          skip: skip,
+          limit: chunkSize,
+          listId: _listaActual,
+          isSuspendedSale: 'N',
+        );
 
-      return product.copyWith(
-        barcodes: productBarcodes,
-        price: productPrice,
-        regularPrice: productRegularPrice,
-        isOnSale: int.tryParse(price?.isOnSale ??
-            '0'), // salePrice indica si está en oferta (ahora deberia ser con isOnSale )
-      );
-    }).toList();
-  }
-
-  // se busca un producto por código de barras
-  @override
-  Future<ProductModel?> searchByBarcode(String barcode) async {
-    final products = await getProducts();
-
-    for (var product in products) {
-      if (product.barcodes != null) {
-        for (var productBarcode in product.barcodes!) {
-          if (productBarcode.barcode.toString() == barcode) {
-            return product;
-          }
+        if (productsChunk.isEmpty) {
+          hasMore = false;
+          _isAllProductsLoaded = true;
+          break;
         }
+
+        final mappedChunk = productsChunk.map((product) {
+          final productBarcodes = barcodesByProduct[product.id] ?? [];
+          final fractional = product.fractional ?? 1;
+
+          final productPrice = product.price == null 
+              ? null 
+              : product.price! * fractional;
+          
+          final productRegularPrice = product.regularPrice == null
+              ? null
+              : product.regularPrice! * fractional;
+
+          final mappedProduct = product.copyWith(
+            barcodes: productBarcodes,
+            price: productPrice,
+            regularPrice: productRegularPrice,
+          );
+
+          // Poblar el mapa de búsqueda rápida por código de barras
+          for (var barcodeObj in productBarcodes) {
+            if (barcodeObj.barcode != null) {
+              _cachedBarcodeToProductMap![barcodeObj.barcode.toString()] = mappedProduct;
+            }
+          }
+
+          return mappedProduct;
+        }).toList();
+
+        _cachedMappedProducts!.addAll(mappedChunk);
+        yield List<ProductModel>.from(_cachedMappedProducts!);
+
+        if (productsChunk.length < chunkSize) {
+          hasMore = false;
+          _isAllProductsLoaded = true;
+        } else {
+          skip += chunkSize;
+        }
+      } catch (e) {
+        hasMore = false;
+        rethrow;
       }
     }
-    return null;
   }
 
-  // get productos por categoría, si la categoría es "Todo" o "All" se traen todos los productos
+  @override
+  Future<ProductModel?> searchByBarcode(String barcode) async {
+    if (_cachedBarcodeToProductMap == null || !_isAllProductsLoaded) {
+      await getProducts().last;
+    }
+    return _cachedBarcodeToProductMap?[barcode];
+  }
+
   @override
   Future<List<ProductModel>> getProductsByCategory(String category) async {
-    final products = await getProducts();
+    if (_cachedMappedProducts == null || !_isAllProductsLoaded) {
+      await getProducts().last;
+    }
+    final products = _cachedMappedProducts ?? [];
 
     if (category.toLowerCase() == 'todo' || category.toLowerCase() == 'all') {
       return products;
@@ -211,10 +217,12 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
         .toList();
   }
 
-  // se busca un producto por descripción, id, categoría o código de barras que contenga la query (si la query es vacía se traen todos los productos)
   @override
   Future<List<ProductModel>> searchProducts(String query) async {
-    final products = await getProducts();
+    if (_cachedMappedProducts == null || !_isAllProductsLoaded) {
+      await getProducts().last;
+    }
+    final products = _cachedMappedProducts ?? [];
 
     if (query.isEmpty) return products;
 
@@ -230,14 +238,6 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
         .toList();
   }
 
-  bool _hasMatchingBarcode(ProductModel product, String query) {
-    if (product.barcodes == null) return false;
-
-    return product.barcodes!
-        .any((barcode) => barcode.barcode.toString().contains(query));
-  }
-
-  // get categorías, se traen todas las categorías sin importar la lista de precios
   @override
   Future<List<CategoryModel>> getCategories() async {
     if (_cachedCategories != null) {
@@ -253,10 +253,75 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Helper / Private Fetching Methods
+  // ---------------------------------------------------------------------------
+
+  Future<List<BarcodeModel>> _fetchBarcodes() async {
+    if (_cachedBarcodes != null) {
+      return _cachedBarcodes!;
+    }
+
+    try {
+      _cachedBarcodes = await _apiService.getBarcodes();
+      return _cachedBarcodes!;
+    } catch (e) {
+      _cachedBarcodes = [];
+      return _cachedBarcodes!;
+    }
+  }
+
+  bool _hasMatchingBarcode(ProductModel product, String query) {
+    if (product.barcodes == null) return false;
+    return product.barcodes!
+        .any((barcode) => barcode.barcode.toString().contains(query));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cache Management
+  // ---------------------------------------------------------------------------
+
   void clearCache() {
     _cachedProducts = null;
     _cachedPrecios = null;
     _cachedBarcodes = null;
     _cachedCategories = null;
+    _cachedMappedProducts = null;
+    _cachedBarcodeToProductMap = null;
+    _isAllProductsLoaded = false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Legacy / Compatibility Methods (Prices list are now handled by backend)
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<List<PrecioArticuloModel>> getPreciosArticulos() async {
+    if (_cachedPrecios != null) {
+      return _cachedPrecios!;
+    }
+
+    try {
+      _cachedPrecios = await _apiService.getPricesList();
+      return _cachedPrecios!;
+    } catch (e) {
+      throw Exception(ErrorHandler.handleError(e,
+          defaultMessage: 'Error al cargar precios'));
+    }
+  }
+
+  @override
+  Future<Map<int, PrecioArticuloModel>> getPreciosByLista(
+      int listaPrecio) async {
+    final precios = await getPreciosArticulos();
+    final preciosByProducto = <int, PrecioArticuloModel>{};
+
+    for (var precio in precios) {
+      if (precio.listId == listaPrecio) {
+        preciosByProducto[precio.productId] = precio;
+      }
+    }
+
+    return preciosByProducto;
   }
 }

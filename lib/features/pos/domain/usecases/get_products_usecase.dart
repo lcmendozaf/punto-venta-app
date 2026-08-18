@@ -6,13 +6,13 @@ class GetProductsUsecase {
 
   GetProductsUsecase(this.repository);
 
-  Future<List<Product>> call() async {
-    return await repository.getProducts();
+  Stream<List<Product>> call() {
+    return repository.getProducts();
   }
 
   Future<List<Product>> getByCategory(String category) async {
     if (category.toLowerCase() == 'todo') {
-      return await repository.getProducts();
+      return await repository.getProducts().last;
     }
     return await repository.getProductsByCategory(category);
   }

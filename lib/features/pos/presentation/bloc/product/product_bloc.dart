@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:punto_venta_app/features/pos/domain/entities/product.dart';
 import 'package:punto_venta_app/features/pos/domain/usecases/get_products_usecase.dart';
 import 'package:punto_venta_app/features/pos/data/datasources/price_list_local_datasource.dart';
 import 'product_event.dart';
@@ -39,15 +40,19 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       // se actualiza la lista de precios en el usecase para que los productos se traigan con los precios correctos
       await getProductsUsecase.updatePriceList(currentList);
 
-      // se traen los productos y categorías con la lista de precios actual
-      final products = await getProductsUsecase();
+      // se traen las categorías primero
       final categories = await getProductsUsecase.getCategories();
 
-      emit(ProductLoaded(
-        products: products,
-        categories: categories,
-        currentPriceList: currentList,
-      ));
+      // se traen los productos incrementalmente por el stream
+      await emit.forEach<List<Product>>(
+        getProductsUsecase(),
+        onData: (products) => ProductLoaded(
+          products: products,
+          categories: categories,
+          currentPriceList: currentList,
+        ),
+        onError: (error, stackTrace) => ProductError(error.toString()),
+      );
     } catch (e) {
       emit(ProductError(e.toString()));
     }
@@ -125,14 +130,19 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       await priceListLocalDataSource.savePriceList(listId);
       await getProductsUsecase.updatePriceList(listId);
 
-      final products = await getProductsUsecase();
+      // se traen las categorías primero
       final categories = await getProductsUsecase.getCategories();
 
-      emit(ProductLoaded(
-        products: products,
-        categories: categories,
-        currentPriceList: listId,
-      ));
+      // se traen los productos incrementalmente por el stream
+      await emit.forEach<List<Product>>(
+        getProductsUsecase(),
+        onData: (products) => ProductLoaded(
+          products: products,
+          categories: categories,
+          currentPriceList: listId,
+        ),
+        onError: (error, stackTrace) => ProductError(error.toString()),
+      );
     } catch (e) {
       emit(ProductError(e.toString()));
     }
