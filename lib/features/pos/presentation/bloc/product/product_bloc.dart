@@ -62,7 +62,9 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         },
         onError: (error, stackTrace) {
           if (!emit.isDone) {
-            emit(ProductError(error.toString()));
+            if (state is! ProductLoaded) {
+              emit(ProductError(error.toString()));
+            }
           }
           completer.complete();
         },

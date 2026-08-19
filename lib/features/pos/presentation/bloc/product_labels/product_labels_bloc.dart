@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/product.dart';
 import 'package:punto_venta_app/features/pos/domain/usecases/get_products_usecase.dart';
@@ -14,6 +15,7 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
   final PriceListLocalDataSource priceListLocalDataSource;
   final PrinterSocketDatasource? printerDataSource;
   final PrinterLocalDataSource printerLocalDataSource;
+  StreamSubscription<List<Product>>? _productsSubscription;
 
   ProductLabelsBloc({
     required this.getProductsUsecase,
@@ -44,6 +46,9 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
     LoadProducts event,
     Emitter<ProductLabelsState> emit,
   ) async {
+    await _productsSubscription?.cancel();
+    _productsSubscription = null;
+
     emit(ProductLabelsLoading());
     try {
       int currentList = await priceListLocalDataSource.getCurrentPriceList();
@@ -54,14 +59,34 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
 
       await getProductsUsecase.updatePriceList(currentList);
 
-      final products = await getProductsUsecase().last;
       final categories = await getProductsUsecase.getCategories();
 
-      emit(ProductLabelsLoaded(
-        products: products,
-        categories: categories,
-        selectedProducts: const [],
-      ));
+      final completer = Completer<void>();
+
+      _productsSubscription = getProductsUsecase().listen(
+        (products) {
+          if (!emit.isDone) {
+            emit(ProductLabelsLoaded(
+              products: products,
+              categories: categories,
+              selectedProducts: const [],
+            ));
+          }
+        },
+        onError: (error, stackTrace) {
+          if (!emit.isDone) {
+            if (state is! ProductLabelsLoaded) {
+              emit(ProductLabelsError(error.toString()));
+            }
+          }
+          completer.complete();
+        },
+        onDone: () {
+          completer.complete();
+        },
+      );
+
+      await completer.future;
     } catch (e) {
       emit(ProductLabelsError(e.toString()));
     }
@@ -213,5 +238,11 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
       emit(ProductLabelsPrintError(e.toString()));
       emit(currentState);
     }
+  }
+
+  @override
+  Future<void> close() {
+    _productsSubscription?.cancel();
+    return super.close();
   }
 }

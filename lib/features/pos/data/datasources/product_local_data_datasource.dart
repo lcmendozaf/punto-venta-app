@@ -107,9 +107,8 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
 
   @override
   Stream<List<ProductModel>> getProducts() async* {
-    if (_cachedMappedProducts != null && _isAllProductsLoaded) {
+    if (_cachedMappedProducts != null && _cachedMappedProducts!.isNotEmpty) {
       yield _cachedMappedProducts!;
-      return;
     }
 
     // Se traen todos los códigos de barras en paralelo una única vez
@@ -118,10 +117,13 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
     // Agrupar los códigos de barras por id de producto para una asociación rápida
     final barcodesByProduct = <int, List<BarcodeModel>>{};
     for (var barcode in barcodes) {
-      if (!barcodesByProduct.containsKey(barcode.articleId)) {
-        barcodesByProduct[barcode.articleId ?? 0] = [];
+      final articleId = barcode.articleId;
+      if (articleId != null) {
+        if (!barcodesByProduct.containsKey(articleId)) {
+          barcodesByProduct[articleId] = [];
+        }
+        barcodesByProduct[articleId]!.add(barcode);
       }
-      barcodesByProduct[barcode.articleId]!.add(barcode);
     }
 
     const int chunkSize = 300;
@@ -162,6 +164,12 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
           break;
         }
 
+        // Si el caché fue limpiado en medio de la petición asíncrona, abortamos para evitar excepciones de nulo
+        if (_cachedMappedProducts == null || _cachedBarcodeToProductMap == null) {
+          hasMore = false;
+          break;
+        }
+
         final mappedChunk = productsChunk.map((product) {
           final productBarcodes = barcodesByProduct[product.id] ?? [];
           final fractional = product.fractional ?? 1;
@@ -181,7 +189,7 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
 
           // Poblar el mapa de búsqueda rápida por código de barras
           for (var barcodeObj in productBarcodes) {
-            if (barcodeObj.barcode != null) {
+            if (barcodeObj.barcode != null && _cachedBarcodeToProductMap != null) {
               _cachedBarcodeToProductMap![barcodeObj.barcode.toString()] =
                   mappedProduct;
             }
@@ -190,8 +198,22 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
           return mappedProduct;
         }).toList();
 
-        _cachedMappedProducts!.addAll(mappedChunk);
-        yield List<ProductModel>.from(_cachedMappedProducts!);
+        // Evitar duplicados por concurrencia y verificar nulabilidad del caché, actualizando si ya existe
+        if (_cachedMappedProducts != null) {
+          for (var p in mappedChunk) {
+            final existingIndex =
+                _cachedMappedProducts!.indexWhere((cached) => cached.id == p.id);
+            if (existingIndex != -1) {
+              _cachedMappedProducts![existingIndex] = p;
+            } else {
+              _cachedMappedProducts!.add(p);
+            }
+          }
+          yield List<ProductModel>.from(_cachedMappedProducts!);
+        } else {
+          hasMore = false;
+          break;
+        }
 
         if (productsChunk.length < chunkSize) {
           hasMore = false;
