@@ -18,7 +18,6 @@ import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/client
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/client/select_client_dialog.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/order/load_saved_orders_dialog.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/order/save_order_dialog.dart';
-import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/settings/pdv_settings_dialog.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/settings/settings_dialog.dart';
 
 class AppSidebar extends StatefulWidget {
@@ -274,25 +273,7 @@ class _AppSidebarState extends State<AppSidebar> {
                         },
                   ),
                 ),
-              // Configuración PDV (solo si NO es administrador)
-              if (!widget.isAdmin)
-                _buildNavItem(
-                  context,
-                  isSelected: _isSettingsDialogOpen,
-                  isDark: isDark,
-                  sidebarSurface: sidebarSurface,
-                  child: SidebarItem(
-                    icon: Icons.settings_outlined,
-                    isHighlighted: _isSettingsDialogOpen,
-                    tooltip: 'Configuración',
-                    onTap: widget.onSettingsPressed ??
-                        () async {
-                          setState(() => _isSettingsDialogOpen = true);
-                          await showPdvSettingsDialog(context, widget.isAdmin);
-                          setState(() => _isSettingsDialogOpen = false);
-                        },
-                  ),
-                ),
+
               _buildNavItem(
                 context,
                 isSelected: _isLogoutDialogOpen,

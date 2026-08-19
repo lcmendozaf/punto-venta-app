@@ -22,25 +22,16 @@ class SupplierPaymentsPage extends StatefulWidget {
 }
 
 class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
-  final TextEditingController _remitoController = TextEditingController();
-  final TextEditingController _ticketController = TextEditingController();
   final TextEditingController _totalPaidController = TextEditingController();
-  final TextEditingController _totalChargedController = TextEditingController();
 
   @override
   void dispose() {
-    _remitoController.dispose();
-    _ticketController.dispose();
     _totalPaidController.dispose();
-    _totalChargedController.dispose();
     super.dispose();
   }
 
   void _resetForms() {
-    _remitoController.clear();
-    _ticketController.clear();
     _totalPaidController.clear();
-    _totalChargedController.clear();
   }
 
   void _changeSupplier(Supplier? newSupplier) async {
@@ -68,7 +59,8 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, 'discard'),
-              child: const Text('Descartar', style: TextStyle(color: Colors.red)),
+              child:
+                  const Text('Descartar', style: TextStyle(color: Colors.red)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, 'save'),
@@ -111,7 +103,8 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       body: BlocListener<SupplierPaymentsBloc, SupplierPaymentsState>(
         listenWhen: (previous, current) {
-          return previous.selectedSupplier?.id != current.selectedSupplier?.id ||
+          return previous.selectedSupplier?.id !=
+                  current.selectedSupplier?.id ||
               previous.status != current.status;
         },
         listener: (context, state) {
