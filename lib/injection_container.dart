@@ -128,6 +128,12 @@ import 'package:punto_venta_app/features/pos/domain/usecases/make_supplier_payme
 import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_bloc.dart';
 import 'features/pos/data/repositories/saved_orders_repository_impl.dart';
 import 'features/pos/domain/usecases/get_products_usecase.dart';
+import 'package:punto_venta_app/features/pos/domain/repositories/cash_register_repository.dart';
+import 'package:punto_venta_app/features/pos/data/repositories/cash_register_repository_impl.dart';
+import 'package:punto_venta_app/features/pos/domain/usecases/get_cash_register_status_usecase.dart';
+import 'package:punto_venta_app/features/pos/domain/usecases/open_cash_register_usecase.dart';
+import 'package:punto_venta_app/features/pos/domain/usecases/close_cash_register_usecase.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/cash_register/cash_register_cubit.dart';
 import 'features/pos/domain/usecases/manage_cart_usecase.dart';
 import 'features/pos/domain/usecases/save_order_usecase.dart';
 import 'features/pos/presentation/bloc/product/product_bloc.dart';
@@ -216,6 +222,11 @@ Future<void> init() async {
 
   //! Features - POS
   // Bloc
+  sl.registerFactory(() => CashRegisterCubit(
+        getStatusUseCase: sl(),
+        openUseCase: sl(),
+        closeUseCase: sl(),
+      ));
   sl.registerFactory(() =>
       ProductBloc(getProductsUsecase: sl(), priceListLocalDataSource: sl()));
   sl.registerFactory(() => CartBloc(
@@ -303,6 +314,9 @@ Future<void> init() async {
   sl.registerLazySingleton(() => FetchPaymentMethodsConfigUsecase(sl()));
   sl.registerLazySingleton(() => SavePaymentMethodsConfigUsecase(sl()));
   sl.registerLazySingleton(() => FetchPdvConfigUsecase(sl()));
+  sl.registerLazySingleton(() => GetCashRegisterStatusUseCase(sl()));
+  sl.registerLazySingleton(() => OpenCashRegisterUseCase(sl()));
+  sl.registerLazySingleton(() => CloseCashRegisterUseCase(sl()));
   sl.registerLazySingleton(() => FetchPriceListTypesUsecase(sl()));
   sl.registerLazySingleton(() => FetchBranchesUsecase(sl()));
   sl.registerLazySingleton(() => FetchReturnReasonsUsecase(sl()));
@@ -319,6 +333,9 @@ Future<void> init() async {
   // sl.registerLazySingleton(() => PrintTicketUsecase(sl()));
 
   // Repository
+  sl.registerLazySingleton<CashRegisterRepository>(
+    () => CashRegisterRepositoryImpl(remoteDataSource: sl()),
+  );
   sl.registerLazySingleton<ProductRepository>(
     () => ProductRepositoryImpl(localDataSource: sl()),
   );

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/constants/app_colors.dart';
-import '../../../../../core/constants/app_dimensions.dart';
-import '../../../../../core/constants/app_string.dart';
-import '../../../../../core/utils/extensions.dart';
-import '../../../../../core/widgets/custom_button.dart';
+import 'package:punto_venta_app/core/constants/app_colors.dart';
+import 'package:punto_venta_app/core/constants/app_dimensions.dart';
+import 'package:punto_venta_app/core/constants/app_string.dart';
+import 'package:punto_venta_app/core/utils/extensions.dart';
+import 'package:punto_venta_app/core/widgets/custom_button.dart';
 
 class CartSummary extends StatelessWidget {
   final double subtotal;
@@ -12,6 +12,7 @@ class CartSummary extends StatelessWidget {
   final bool isReturnMode;
   final VoidCallback onClear;
   final VoidCallback onConfirm;
+  final bool isConfirmEnabled;
 
   const CartSummary({
     super.key,
@@ -21,6 +22,7 @@ class CartSummary extends StatelessWidget {
     this.isReturnMode = false,
     required this.onClear,
     required this.onConfirm,
+    this.isConfirmEnabled = true,
   });
 
   @override
@@ -59,8 +61,10 @@ class CartSummary extends StatelessWidget {
             height: 30,
             width: double.infinity,
             text: isReturnMode ? 'Devolución' : AppStrings.confirm,
-            onPressed: onConfirm,
-            backgroundColor: isReturnMode ? AppColors.warning : AppColors.green,
+            onPressed: isConfirmEnabled ? onConfirm : null,
+            backgroundColor: isConfirmEnabled
+                ? (isReturnMode ? AppColors.warning : AppColors.green)
+                : Colors.grey,
           ),
         ],
       ),

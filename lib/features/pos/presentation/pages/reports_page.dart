@@ -455,8 +455,8 @@ class _ReportsPageState extends State<ReportsPage>
                       Expanded(
                         child: Text(
                           showDate
-                              ? "#${ticket.id} | ${DateFormat('dd/MM/yyyy HH:mm').format(ticket.completedAt)}"
-                              : "#${ticket.orderNumber} | ${DateFormat('HH:mm').format(ticket.completedAt)}",
+                              ? "${ticket.description} | ${DateFormat('dd/MM/yyyy HH:mm').format(ticket.completedAt)}"
+                              : "${ticket.description} | ${DateFormat('HH:mm').format(ticket.completedAt)}",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: isCreditNote ? Colors.grey.shade900 : null,

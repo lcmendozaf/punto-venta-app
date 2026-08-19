@@ -127,6 +127,7 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
     const int chunkSize = 300;
     int skip = 0;
     bool hasMore = true;
+    final Set<int> seenIds = {};
 
     // Inicializar cachés si es la primera carga
     _cachedMappedProducts ??= [];
@@ -147,14 +148,27 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
           break;
         }
 
+        bool hasNewProduct = false;
+        for (var p in productsChunk) {
+          if (p.id != null && !seenIds.contains(p.id)) {
+            seenIds.add(p.id!);
+            hasNewProduct = true;
+          }
+        }
+
+        if (!hasNewProduct) {
+          hasMore = false;
+          _isAllProductsLoaded = true;
+          break;
+        }
+
         final mappedChunk = productsChunk.map((product) {
           final productBarcodes = barcodesByProduct[product.id] ?? [];
           final fractional = product.fractional ?? 1;
 
-          final productPrice = product.price == null 
-              ? null 
-              : product.price! * fractional;
-          
+          final productPrice =
+              product.price == null ? null : product.price! * fractional;
+
           final productRegularPrice = product.regularPrice == null
               ? null
               : product.regularPrice! * fractional;
@@ -168,7 +182,8 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
           // Poblar el mapa de búsqueda rápida por código de barras
           for (var barcodeObj in productBarcodes) {
             if (barcodeObj.barcode != null) {
-              _cachedBarcodeToProductMap![barcodeObj.barcode.toString()] = mappedProduct;
+              _cachedBarcodeToProductMap![barcodeObj.barcode.toString()] =
+                  mappedProduct;
             }
           }
 

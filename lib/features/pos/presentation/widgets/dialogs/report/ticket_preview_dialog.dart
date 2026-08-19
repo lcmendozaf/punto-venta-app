@@ -366,7 +366,7 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
                       const SizedBox(width: AppDimensions.paddingS),
                     Expanded(
                       child: Text(
-                        'Ticket - ${widget.ticket.id}',
+                        '${widget.ticket.description}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: _isCreditNote || _isAnnulledFactura

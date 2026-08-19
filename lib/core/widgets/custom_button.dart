@@ -3,7 +3,7 @@ import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color? backgroundColor;
   final Color? textColor;
   final bool isLoading;

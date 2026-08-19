@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/product.dart';
 import 'package:punto_venta_app/features/pos/domain/usecases/get_products_usecase.dart';
@@ -8,6 +9,7 @@ import 'product_state.dart';
 class ProductBloc extends Bloc<ProductEvent, ProductState> {
   final GetProductsUsecase getProductsUsecase;
   final PriceListLocalDataSource priceListLocalDataSource;
+  StreamSubscription<List<Product>>? _productsSubscription;
 
   ProductBloc({
     required this.getProductsUsecase,
@@ -24,6 +26,9 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     LoadProducts event,
     Emitter<ProductState> emit,
   ) async {
+    await _productsSubscription?.cancel();
+    _productsSubscription = null;
+
     emit(ProductLoading());
     try {
       int currentList;
@@ -43,16 +48,30 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       // se traen las categorías primero
       final categories = await getProductsUsecase.getCategories();
 
-      // se traen los productos incrementalmente por el stream
-      await emit.forEach<List<Product>>(
-        getProductsUsecase(),
-        onData: (products) => ProductLoaded(
-          products: products,
-          categories: categories,
-          currentPriceList: currentList,
-        ),
-        onError: (error, stackTrace) => ProductError(error.toString()),
+      final completer = Completer<void>();
+
+      _productsSubscription = getProductsUsecase().listen(
+        (products) {
+          if (!emit.isDone) {
+            emit(ProductLoaded(
+              products: products,
+              categories: categories,
+              currentPriceList: currentList,
+            ));
+          }
+        },
+        onError: (error, stackTrace) {
+          if (!emit.isDone) {
+            emit(ProductError(error.toString()));
+          }
+          completer.complete();
+        },
+        onDone: () {
+          completer.complete();
+        },
       );
+
+      await completer.future;
     } catch (e) {
       emit(ProductError(e.toString()));
     }
@@ -122,6 +141,9 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     ChangePriceList event,
     Emitter<ProductState> emit,
   ) async {
+    await _productsSubscription?.cancel();
+    _productsSubscription = null;
+
     emit(ProductLoading());
 
     try {
@@ -133,18 +155,38 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       // se traen las categorías primero
       final categories = await getProductsUsecase.getCategories();
 
-      // se traen los productos incrementalmente por el stream
-      await emit.forEach<List<Product>>(
-        getProductsUsecase(),
-        onData: (products) => ProductLoaded(
-          products: products,
-          categories: categories,
-          currentPriceList: listId,
-        ),
-        onError: (error, stackTrace) => ProductError(error.toString()),
+      final completer = Completer<void>();
+
+      _productsSubscription = getProductsUsecase().listen(
+        (products) {
+          if (!emit.isDone) {
+            emit(ProductLoaded(
+              products: products,
+              categories: categories,
+              currentPriceList: listId,
+            ));
+          }
+        },
+        onError: (error, stackTrace) {
+          if (!emit.isDone) {
+            emit(ProductError(error.toString()));
+          }
+          completer.complete();
+        },
+        onDone: () {
+          completer.complete();
+        },
       );
+
+      await completer.future;
     } catch (e) {
       emit(ProductError(e.toString()));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _productsSubscription?.cancel();
+    return super.close();
   }
 }

@@ -22,6 +22,7 @@ import 'route_paths.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/supplier_payments/supplier_payments_event.dart';
 import 'package:punto_venta_app/features/pos/presentation/pages/supplier_payments_page.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/cash_register/cash_register_cubit.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -68,7 +69,10 @@ class AppRouter {
           GoRoute(
             path: RoutePaths.pos,
             builder: (BuildContext context, GoRouterState state) {
-              return const PosMainPage();
+              return BlocProvider(
+                create: (_) => di.sl<CashRegisterCubit>()..fetchStatus(),
+                child: const PosMainPage(),
+              );
             },
           ),
           GoRoute(

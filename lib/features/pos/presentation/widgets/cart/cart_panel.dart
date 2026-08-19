@@ -25,6 +25,8 @@ import 'package:punto_venta_app/features/pos/presentation/bloc/printer/printer_b
 import 'package:punto_venta_app/features/pos/presentation/bloc/printer/printer_event.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/printer/printer_state.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/common/error_dialog.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/cash_register/cash_register_cubit.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/cash_register/cash_register_state.dart';
 
 class CartPanel extends StatefulWidget {
   const CartPanel({super.key});
@@ -208,28 +210,37 @@ class _CartPanelState extends State<CartPanel> {
                                         ),
                                         const Divider(height: 1),
                                         // monto, botones de cartPanel ( confirmar venta o devolucion)
-                                        CartSummary(
-                                          subtotal: subtotal,
-                                          totalIva: totalIva,
-                                          totalConIva: totalConIva,
-                                          isReturnMode: isReturnMode,
-                                          onClear: () {
-                                            context
-                                                .read<CartBloc>()
-                                                .add(ClearCart());
-                                          },
-                                          onConfirm: () {
-                                            if (state.items.isNotEmpty) {
-                                              if (!isBarcodeMode) {
+                                        BlocBuilder<CashRegisterCubit,
+                                            CashRegisterState>(
+                                          builder: (context, registerState) {
+                                            final isConfirmEnabled =
+                                                registerState
+                                                        is CashRegisterLoaded &&
+                                                    registerState.status.isOpen;
+
+                                            return CartSummary(
+                                              subtotal: subtotal,
+                                              totalIva: totalIva,
+                                              totalConIva: totalConIva,
+                                              isReturnMode: isReturnMode,
+                                              isConfirmEnabled:
+                                                  isConfirmEnabled,
+                                              onClear: () {
                                                 context
-                                                    .read<UiBloc>()
-                                                    .add(ToggleBarcodeSearch());
-                                              }
-                                              // abre el showconfirmation panel
-                                              context
-                                                  .read<UiBloc>()
-                                                  .add(OpenConfirmationPanel());
-                                            }
+                                                    .read<CartBloc>()
+                                                    .add(ClearCart());
+                                              },
+                                              onConfirm: () {
+                                                if (state.items.isNotEmpty) {
+                                                  if (!isBarcodeMode) {
+                                                    context.read<UiBloc>().add(
+                                                        ToggleBarcodeSearch());
+                                                  }
+                                                  context.read<UiBloc>().add(
+                                                      OpenConfirmationPanel());
+                                                }
+                                              },
+                                            );
                                           },
                                         ),
                                       ],
