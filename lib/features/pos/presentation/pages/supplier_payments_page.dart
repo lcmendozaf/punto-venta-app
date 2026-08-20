@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:punto_venta_app/app/routes/route_paths.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/features/auth/prensetation/bloc/auth_bloc.dart';
@@ -99,69 +100,78 @@ class _SupplierPaymentsPageState extends State<SupplierPaymentsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
-      body: BlocListener<SupplierPaymentsBloc, SupplierPaymentsState>(
-        listenWhen: (previous, current) {
-          return previous.selectedSupplier?.id !=
-                  current.selectedSupplier?.id ||
-              previous.status != current.status;
-        },
-        listener: (context, state) {
-          if (state.status == SupplierPaymentStatus.success) {
-            _resetForms();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Pago a proveedor registrado con éxito'),
-                backgroundColor: AppColors.success,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            context
-                .read<SupplierPaymentsBloc>()
-                .add(ResetSupplierPaymentFormEvent());
-          } else if (state.status == SupplierPaymentStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content:
-                    Text(state.errorMessage ?? 'Error al procesar el pago'),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          } else {
-            // Selected supplier changed (due to loading a draft or initial/reset)
-            if (state.selectedSupplier != null) {
-              final formatter = NumberFormat('#,##0.00', 'es_AR');
-              if (state.totalPaid > 0) {
-                _totalPaidController.text = formatter.format(state.totalPaid);
-              } else {
-                _totalPaidController.clear();
-              }
-            } else {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.of(context).pushReplacementNamed(RoutePaths.pos);
+        }
+      },
+      child: Scaffold(
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.background,
+        body: BlocListener<SupplierPaymentsBloc, SupplierPaymentsState>(
+          listenWhen: (previous, current) {
+            return previous.selectedSupplier?.id !=
+                    current.selectedSupplier?.id ||
+                previous.status != current.status;
+          },
+          listener: (context, state) {
+            if (state.status == SupplierPaymentStatus.success) {
               _resetForms();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Pago a proveedor registrado con éxito'),
+                  backgroundColor: AppColors.success,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              context
+                  .read<SupplierPaymentsBloc>()
+                  .add(ResetSupplierPaymentFormEvent());
+            } else if (state.status == SupplierPaymentStatus.error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content:
+                      Text(state.errorMessage ?? 'Error al procesar el pago'),
+                  backgroundColor: AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            } else {
+              // Selected supplier changed (due to loading a draft or initial/reset)
+              if (state.selectedSupplier != null) {
+                final formatter = NumberFormat('#,##0.00', 'es_AR');
+                if (state.totalPaid > 0) {
+                  _totalPaidController.text = formatter.format(state.totalPaid);
+                } else {
+                  _totalPaidController.clear();
+                }
+              } else {
+                _resetForms();
+              }
             }
-          }
-        },
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 4,
-              child: SuppliersListPanel(
-                onSupplierSelected: _changeSupplier,
+          },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 4,
+                child: SuppliersListPanel(
+                  onSupplierSelected: _changeSupplier,
+                ),
               ),
-            ),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: isDark ? AppColors.darkDivider : Colors.grey.shade300,
-            ),
-            Expanded(
-              flex: 8,
-              child: _buildFormPanel(isDark),
-            ),
-          ],
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: isDark ? AppColors.darkDivider : Colors.grey.shade300,
+              ),
+              Expanded(
+                flex: 8,
+                child: _buildFormPanel(isDark),
+              ),
+            ],
+          ),
         ),
       ),
     );

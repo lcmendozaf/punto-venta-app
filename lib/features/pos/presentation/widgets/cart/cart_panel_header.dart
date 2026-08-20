@@ -3,14 +3,55 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/core/constants/app_string.dart';
+import 'package:punto_venta_app/core/utils/extensions.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/cart/cart_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/cart/cart_event.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/cart/cart_state.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_event.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_state.dart';
 
 class CartPanelHeader extends StatelessWidget {
   const CartPanelHeader({super.key});
+
+  void _changeMode(BuildContext context, bool toReturnMode) {
+    context.read<UiBloc>().add(ToggleReturnMode());
+    context.read<CartBloc>().add(ClearCart());
+  }
+
+  void _showChangeModeConfirmation(BuildContext context, bool toReturnMode) {
+    final cartState = context.read<CartBloc>().state;
+    final hasItems = cartState is CartLoaded && cartState.items.isNotEmpty;
+
+    if (!hasItems) {
+      _changeMode(context, toReturnMode);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Limpiar Pedido'),
+        content: Text(
+          'Al cambiar a modo ${toReturnMode ? "Devolución" : "Venta"}, '
+          'se limpiará el pedido actual. ¿Desea continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _changeMode(context, toReturnMode);
+            },
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,110 +68,178 @@ class CartPanelHeader extends StatelessWidget {
           ),
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            AppStrings.cartSummary,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          BlocBuilder<UiBloc, UiState>(
+      child: BlocBuilder<CartBloc, CartState>(
+        builder: (context, cartState) {
+          final total = cartState is CartLoaded ? cartState.totalConIva : 0.0;
+
+          return BlocBuilder<UiBloc, UiState>(
             builder: (context, uiState) {
               final isReturnMode =
                   uiState is UiLoaded ? uiState.isReturnMode : false;
 
-              return Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildSegmentButton(
-                      context: context,
-                      label: 'Venta',
-                      icon: Icons.shopping_cart_outlined,
-                      isActive: !isReturnMode,
-                      activeColor: AppColors.primary,
-                      onTap: () {
-                        if (isReturnMode) {
-                          context.read<UiBloc>().add(ToggleReturnMode());
-                          context.read<CartBloc>().add(ClearCart());
-                        }
-                      },
+              return Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Lado izquierdo: Título y etiqueta de Modo
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            AppStrings.cartSummary,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                isReturnMode
+                                    ? Icons.assignment_return_outlined
+                                    : Icons.shopping_cart_outlined,
+                                size: 14,
+                                color: isReturnMode
+                                    ? AppColors.warning
+                                    : AppColors.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isReturnMode ? 'Devolución' : 'Venta',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: isReturnMode
+                                      ? AppColors.warning
+                                      : AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      // Lado derecho: Total y Hamburguesa (Menú)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Total
+
+                          const SizedBox(width: 12),
+                          // Menú Hamburguesa
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.menu, color: Colors.black87),
+                            tooltip: 'Cambiar modo',
+                            onSelected: (value) {
+                              if (value == 'venta' && isReturnMode) {
+                                _showChangeModeConfirmation(context, false);
+                              } else if (value == 'devolucion' &&
+                                  !isReturnMode) {
+                                _showChangeModeConfirmation(context, true);
+                              }
+                            },
+                            itemBuilder: (BuildContext context) =>
+                                <PopupMenuEntry<String>>[
+                              PopupMenuItem<String>(
+                                value: 'venta',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.shopping_cart_outlined,
+                                      color: !isReturnMode
+                                          ? AppColors.primary
+                                          : Colors.grey,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Venta',
+                                      style: TextStyle(
+                                        fontWeight: !isReturnMode
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: !isReturnMode
+                                            ? AppColors.primary
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                    if (!isReturnMode) ...[
+                                      const Spacer(),
+                                      const Icon(Icons.check,
+                                          color: AppColors.primary, size: 18),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'devolucion',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.assignment_return_outlined,
+                                      color: isReturnMode
+                                          ? AppColors.warning
+                                          : Colors.grey,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Devolución',
+                                      style: TextStyle(
+                                        fontWeight: isReturnMode
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: isReturnMode
+                                            ? AppColors.warning
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                    if (isReturnMode) ...[
+                                      const Spacer(),
+                                      const Icon(Icons.check,
+                                          color: AppColors.warning, size: 18),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppDimensions.paddingS),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
                     ),
-                    _buildSegmentButton(
-                      context: context,
-                      label: 'Devolución',
-                      icon: Icons.assignment_return_outlined,
-                      isActive: isReturnMode,
-                      activeColor: AppColors.warning,
-                      onTap: () {
-                        if (!isReturnMode) {
-                          context.read<UiBloc>().add(ToggleReturnMode());
-                          context.read<CartBloc>().add(ClearCart());
-                        }
-                      },
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        total.formatToCurrency(),
+                        textAlign: TextAlign.center,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  fontSize: 36,
+                                ),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               );
             },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentButton({
-    required BuildContext context,
-    required String label,
-    required IconData icon,
-    required bool isActive,
-    required Color activeColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? activeColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: activeColor.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isActive ? Colors.white : Colors.grey.shade600,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                color: isActive ? Colors.white : Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

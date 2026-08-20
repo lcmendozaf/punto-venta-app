@@ -31,31 +31,6 @@ class CartSummary extends StatelessWidget {
       padding: const EdgeInsets.all(AppDimensions.paddingS),
       child: Column(
         children: [
-          const SizedBox(height: AppDimensions.paddingS),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(AppStrings.total,
-                  style: Theme.of(context).textTheme.bodyMedium),
-              Text(
-                totalConIva.formatToCurrency(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      fontSize: 25,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.paddingS),
-          CustomButton(
-            height: 30,
-            width: double.infinity,
-            text: AppStrings.empty,
-            onPressed: onClear,
-            backgroundColor: AppColors.error,
-          ),
-          const SizedBox(height: AppDimensions.paddingS),
           // cobrar
           CustomButton(
             height: 30,
@@ -65,6 +40,14 @@ class CartSummary extends StatelessWidget {
             backgroundColor: isConfirmEnabled
                 ? (isReturnMode ? AppColors.warning : AppColors.green)
                 : Colors.grey,
+          ),
+          const SizedBox(height: AppDimensions.paddingS),
+          CustomButton(
+            height: 30,
+            width: double.infinity,
+            text: AppStrings.empty,
+            onPressed: onClear,
+            backgroundColor: AppColors.error,
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:punto_venta_app/app/routes/route_paths.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/product_labels/product_labels_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/product_labels/product_labels_event.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/product_labels/product_labels_state.dart';
@@ -28,24 +29,32 @@ class _ProductLabelsPageContent extends StatefulWidget {
   const _ProductLabelsPageContent();
 
   @override
-  State<_ProductLabelsPageContent> createState() => _ProductLabelsPageContentState();
+  State<_ProductLabelsPageContent> createState() =>
+      _ProductLabelsPageContentState();
 }
 
 class _ProductLabelsPageContentState extends State<_ProductLabelsPageContent> {
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          const ProductLabelsHeader(),
-          Expanded(
-            child: BlocConsumer<ProductLabelsBloc, ProductLabelsState>(
-              listener: _handleStateChanges,
-              builder: _buildBody,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.of(context).pushReplacementNamed(RoutePaths.pos);
+        }
+      },
+      child: Scaffold(
+        body: Column(
+          children: [
+            const ProductLabelsHeader(),
+            Expanded(
+              child: BlocConsumer<ProductLabelsBloc, ProductLabelsState>(
+                listener: _handleStateChanges,
+                builder: _buildBody,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -54,8 +63,8 @@ class _ProductLabelsPageContentState extends State<_ProductLabelsPageContent> {
     if (state is ProductLabelsPrintSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Se imprimieron ${state.count} etiqueta(s) correctamente'),
+          content:
+              Text('Se imprimieron ${state.count} etiqueta(s) correctamente'),
           backgroundColor: Colors.green,
         ),
       );

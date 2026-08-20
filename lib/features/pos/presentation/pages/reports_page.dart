@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:punto_venta_app/app/routes/route_paths.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/core/constants/ticket_types.dart';
@@ -111,61 +112,69 @@ class _ReportsPageState extends State<ReportsPage>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ReportsBloc, ReportsState>(
-      listener: (context, state) {
-        if (state is TicketPrinted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        } else if (state is ReportsError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.of(context).pushReplacementNamed(RoutePaths.pos);
         }
       },
-      child: Scaffold(
-        body: Column(
-          children: [
-            // Tabs
-            TabBar(
-              controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: AppColors.primary,
-              tabs: const [
-                Tab(
-                  icon: Icon(Icons.calendar_today, size: 15),
-                  text: 'Resumen Diario',
-                  height: 50,
-                ),
-                Tab(
-                  icon: Icon(Icons.history, size: 15),
-                  text: 'Historial',
-                  height: 50,
-                ),
-              ],
-              onTap: _onTabChanged,
-            ),
-
-            // Content
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildDailySummaryTab(),
-                  _buildHistoryTab(),
-                ],
+      child: BlocListener<ReportsBloc, ReportsState>(
+        listener: (context, state) {
+          if (state is TicketPrinted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.success,
+                behavior: SnackBarBehavior.floating,
               ),
-            ),
-          ],
+            );
+          } else if (state is ReportsError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        child: Scaffold(
+          body: Column(
+            children: [
+              // Tabs
+              TabBar(
+                controller: _tabController,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: AppColors.primary,
+                tabs: const [
+                  Tab(
+                    icon: Icon(Icons.calendar_today, size: 15),
+                    text: 'Resumen Diario',
+                    height: 50,
+                  ),
+                  Tab(
+                    icon: Icon(Icons.history, size: 15),
+                    text: 'Historial',
+                    height: 50,
+                  ),
+                ],
+                onTap: _onTabChanged,
+              ),
+
+              // Content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildDailySummaryTab(),
+                    _buildHistoryTab(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:punto_venta_app/core/widgets/sidebar/sidebar.dart';
 import 'package:punto_venta_app/features/auth/prensetation/bloc/auth_bloc.dart';
@@ -148,14 +149,38 @@ class MainLayoutShell extends StatelessWidget {
         final user = authState is AuthAuthenticated ? authState.user : null;
         final isAdmin = user?.role == UserRole.admin;
 
-        return MainLayout(
-          currentRoute: currentRoute,
-          isAdmin: isAdmin,
-          onLogout: () {
-            context.read<AuthBloc>().add(LogoutEvent());
-            context.go(RoutePaths.login);
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Salir'),
+                  content: const Text('¿Seguro que quieres salir de la app?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => context.pop(),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => SystemNavigator.pop(),
+                      child: const Text('Salir'),
+                    ),
+                  ],
+                ),
+              );
+            }
           },
-          child: child,
+          child: MainLayout(
+            currentRoute: currentRoute,
+            isAdmin: isAdmin,
+            onLogout: () {
+              context.read<AuthBloc>().add(LogoutEvent());
+              context.go(RoutePaths.login);
+            },
+            child: child,
+          ),
         );
       },
     );

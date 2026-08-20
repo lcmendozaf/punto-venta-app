@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:punto_venta_app/app/routes/route_paths.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/settlements/settlements_bloc.dart';
@@ -65,88 +66,97 @@ class _PendingSettlementsPageState extends State<PendingSettlementsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildHeader(isDark),
-          SettlementDatePickerBar(
-            selectedDate: _selectedDate,
-            onDateChanged: (newDate) {
-              setState(() {
-                _selectedDate = newDate;
-              });
-              _fetchCollectors();
-            },
-          ),
-          SettlementSearchField(
-            controller: _searchController,
-          ),
-          Expanded(
-            child: BlocBuilder<SettlementsBloc, SettlementsState>(
-              builder: (context, state) {
-                if (state is SettlementsLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (state is SettlementsError) {
-                  return SettlementErrorWidget(
-                    message: state.message,
-                    onRetry: _fetchCollectors,
-                  );
-                } else if (state is SettlementsLoaded) {
-                  final allCollectors = state.pendingCollectors;
-
-                  if (allCollectors.isEmpty) {
-                    return const SettlementEmptyWidget(
-                      icon: Icons.assignment_turned_in,
-                      message:
-                          'No hay cobradores con liquidaciones pendientes para esta fecha',
-                    );
-                  }
-                  final query = _searchController.text.trim().toLowerCase();
-                  final filteredCollectors = allCollectors.where((collector) {
-                    final name = (collector.name ?? '').toLowerCase();
-                    final id = (collector.userId ?? '').toString();
-                    return name.contains(query) || id.contains(query);
-                  }).toList();
-
-                  if (filteredCollectors.isEmpty) {
-                    return const SettlementEmptyWidget(
-                      icon: Icons.search_off,
-                      message:
-                          'No se encontraron cobradores que coincidan con la búsqueda',
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      _fetchCollectors();
-                    },
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.paddingM,
-                        vertical: AppDimensions.paddingS,
-                      ),
-                      itemCount: filteredCollectors.length,
-                      itemBuilder: (context, index) {
-                        final collector = filteredCollectors[index];
-                        return CollectorListItem(
-                          collector: collector,
-                          onTap: () => _showCollectorDetail(
-                            context,
-                            (collector.userId ?? '').toString(),
-                            collector.name ?? 'Sin Nombre',
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                }
-                return const Center(child: Text('Cargando liquidaciones...'));
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.of(context).pushReplacementNamed(RoutePaths.pos);
+        }
+      },
+      child: Scaffold(
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.background,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(isDark),
+            SettlementDatePickerBar(
+              selectedDate: _selectedDate,
+              onDateChanged: (newDate) {
+                setState(() {
+                  _selectedDate = newDate;
+                });
+                _fetchCollectors();
               },
             ),
-          ),
-        ],
+            SettlementSearchField(
+              controller: _searchController,
+            ),
+            Expanded(
+              child: BlocBuilder<SettlementsBloc, SettlementsState>(
+                builder: (context, state) {
+                  if (state is SettlementsLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (state is SettlementsError) {
+                    return SettlementErrorWidget(
+                      message: state.message,
+                      onRetry: _fetchCollectors,
+                    );
+                  } else if (state is SettlementsLoaded) {
+                    final allCollectors = state.pendingCollectors;
+
+                    if (allCollectors.isEmpty) {
+                      return const SettlementEmptyWidget(
+                        icon: Icons.assignment_turned_in,
+                        message:
+                            'No hay cobradores con liquidaciones pendientes para esta fecha',
+                      );
+                    }
+                    final query = _searchController.text.trim().toLowerCase();
+                    final filteredCollectors = allCollectors.where((collector) {
+                      final name = (collector.name ?? '').toLowerCase();
+                      final id = (collector.userId ?? '').toString();
+                      return name.contains(query) || id.contains(query);
+                    }).toList();
+
+                    if (filteredCollectors.isEmpty) {
+                      return const SettlementEmptyWidget(
+                        icon: Icons.search_off,
+                        message:
+                            'No se encontraron cobradores que coincidan con la búsqueda',
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        _fetchCollectors();
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppDimensions.paddingM,
+                          vertical: AppDimensions.paddingS,
+                        ),
+                        itemCount: filteredCollectors.length,
+                        itemBuilder: (context, index) {
+                          final collector = filteredCollectors[index];
+                          return CollectorListItem(
+                            collector: collector,
+                            onTap: () => _showCollectorDetail(
+                              context,
+                              (collector.userId ?? '').toString(),
+                              collector.name ?? 'Sin Nombre',
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }
+                  return const Center(child: Text('Cargando liquidaciones...'));
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

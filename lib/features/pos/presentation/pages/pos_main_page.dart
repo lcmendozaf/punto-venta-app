@@ -74,185 +74,191 @@ class _PosMainPageState extends State<PosMainPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ClientsBloc, ClientsState>(
-      listenWhen: (previous, current) {
-        if (previous is ClientsLoaded && current is ClientsLoaded) {
-          return previous.selectedClient?.id != current.selectedClient?.id;
-        }
-        if (previous is! ClientsLoaded && current is ClientsLoaded) {
-          return true;
-        }
-        return false;
-      },
-      listener: (context, state) {
-        if (state is ClientsLoaded) {
-          final priceListId = state.selectedClient?.listId;
-          context
-              .read<ProductBloc>()
-              .add(LoadProducts(priceListId: priceListId));
-        }
-      },
-      child: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, authState) {
-          final user = authState is AuthAuthenticated ? authState.user : null;
-
-          return Scaffold(
-            resizeToAvoidBottomInset: true,
-            body: Row(
-              children: [
-                // Catálogo de productos
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: [
-                      PosAppBar(user: user),
-                      // const ClientInfoBar(),
-                      Expanded(
-                        child:
-                            BlocBuilder<CashRegisterCubit, CashRegisterState>(
-                          builder: (context, registerState) {
-                            if (registerState is CashRegisterLoading) {
-                              final currentStatus =
-                                  context.read<CashRegisterCubit>().currentStatus;
-                              if (currentStatus == null) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
-                            }
-
-                            final currentStatus = registerState is CashRegisterLoaded
-                                ? registerState.status
-                                : (registerState is CashRegisterError
-                                    ? registerState.lastStatus
-                                    : context
-                                        .read<CashRegisterCubit>()
-                                        .currentStatus);
-
-                            final isRegisterOpen = currentStatus?.isOpen ?? false;
-
-                            if (!isRegisterOpen) {
-                              return const ClosedRegisterView();
-                            }
-
-                            return BlocBuilder<UiBloc, UiState>(
-                              builder: (context, uiState) {
-                                final isBarcodeMode = uiState is UiLoaded
-                                    ? uiState.isBarcodeSearchEnabled
-                                    : true;
-
-                                return CatalogCard(
-                                  // barra de búsqueda
-                                  searchBar: IntegratedSearchBar(
-                                    controller: _searchController,
-                                    autofocus: false,
-                                    onSearchChanged: (query) {
-                                      setState(() {});
-                                      context
-                                          .read<ProductBloc>()
-                                          .add(SearchProducts(query));
-                                    },
-                                    onClearSearch: () {
-                                      _searchController.clear();
-                                      context
-                                          .read<ProductBloc>()
-                                          .add(const SearchProducts(''));
-                                      setState(() {});
-                                    },
-                                  ),
-                                  // categorias (solo en modo manual)
-                                  categoryTabs: isBarcodeMode
-                                      ? const SizedBox.shrink()
-                                      : CategoryTabsSection(
-                                          onCategorySelected: (_) {},
-                                          onClearSearch: () {
-                                            _searchController.clear();
-                                            context
-                                                .read<ProductBloc>()
-                                                .add(const SearchProducts(''));
-                                          },
-                                        ),
-                                  // grilla de productos o logs del carrito
-                                  productGrid: isBarcodeMode
-                                      ? _buildCartLogsInCatalog()
-                                      : ProductGridSection(
-                                          onProductTap: (product, quantity,
-                                              isDeleteMode) {
-                                            if (isDeleteMode) {
-                                              final cartBloc =
-                                                  context.read<CartBloc>();
-                                              final quantityInCart = cartBloc
-                                                  .getProductQuantityInCart(
-                                                      product.id.toString());
-
-                                              if (quantityInCart >= quantity) {
-                                                cartBloc.add(
-                                                    RemoveQuantityFromCart(
-                                                        product.id.toString(),
-                                                        quantity));
-                                              } else if (quantityInCart > 0) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Solo hay $quantityInCart unidades de ${product.name} en el carrito. No se puede eliminar $quantity.',
-                                                    ),
-                                                    duration: const Duration(
-                                                        seconds: 2),
-                                                    behavior: SnackBarBehavior
-                                                        .floating,
-                                                    backgroundColor:
-                                                        AppColors.warning,
-                                                  ),
-                                                );
-                                              } else {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                        '${product.name} no está en el carrito'),
-                                                    duration: const Duration(
-                                                        seconds: 1),
-                                                    behavior: SnackBarBehavior
-                                                        .floating,
-                                                    backgroundColor:
-                                                        AppColors.info,
-                                                  ),
-                                                );
-                                              }
-                                            } else {
-                                              if (product.price != null) {
-                                                context.read<CartBloc>().add(
-                                                    AddToCart(product,
-                                                        quantity: quantity));
-                                              }
-                                            }
-                                            context
-                                                .read<UiBloc>()
-                                                .add(ResetQuantity());
-                                          },
-                                        ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Panel de carrito
-                const Expanded(
-                  flex: 1,
-                  child: SizedBox(
-                    width: 380,
-                    child: CartPanel(),
-                  ),
-                ),
-              ],
-            ),
-          );
+    return PopScope(
+      canPop: false,
+      child: BlocListener<ClientsBloc, ClientsState>(
+        listenWhen: (previous, current) {
+          if (previous is ClientsLoaded && current is ClientsLoaded) {
+            return previous.selectedClient?.id != current.selectedClient?.id;
+          }
+          if (previous is! ClientsLoaded && current is ClientsLoaded) {
+            return true;
+          }
+          return false;
         },
+        listener: (context, state) {
+          if (state is ClientsLoaded) {
+            final priceListId = state.selectedClient?.listId;
+            context
+                .read<ProductBloc>()
+                .add(LoadProducts(priceListId: priceListId));
+          }
+        },
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            final user = authState is AuthAuthenticated ? authState.user : null;
+
+            return Scaffold(
+              resizeToAvoidBottomInset: true,
+              body: Row(
+                children: [
+                  // Catálogo de productos
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        PosAppBar(user: user),
+                        // const ClientInfoBar(),
+                        Expanded(
+                          child:
+                              BlocBuilder<CashRegisterCubit, CashRegisterState>(
+                            builder: (context, registerState) {
+                              if (registerState is CashRegisterLoading) {
+                                final currentStatus = context
+                                    .read<CashRegisterCubit>()
+                                    .currentStatus;
+                                if (currentStatus == null) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+                              }
+
+                              final currentStatus =
+                                  registerState is CashRegisterLoaded
+                                      ? registerState.status
+                                      : (registerState is CashRegisterError
+                                          ? registerState.lastStatus
+                                          : context
+                                              .read<CashRegisterCubit>()
+                                              .currentStatus);
+
+                              final isRegisterOpen =
+                                  currentStatus?.isOpen ?? false;
+
+                              if (!isRegisterOpen) {
+                                return const ClosedRegisterView();
+                              }
+
+                              return BlocBuilder<UiBloc, UiState>(
+                                builder: (context, uiState) {
+                                  final isBarcodeMode = uiState is UiLoaded
+                                      ? uiState.isBarcodeSearchEnabled
+                                      : true;
+
+                                  return CatalogCard(
+                                    // barra de búsqueda
+                                    searchBar: IntegratedSearchBar(
+                                      controller: _searchController,
+                                      autofocus: false,
+                                      onSearchChanged: (query) {
+                                        setState(() {});
+                                        context
+                                            .read<ProductBloc>()
+                                            .add(SearchProducts(query));
+                                      },
+                                      onClearSearch: () {
+                                        _searchController.clear();
+                                        context
+                                            .read<ProductBloc>()
+                                            .add(const SearchProducts(''));
+                                        setState(() {});
+                                      },
+                                    ),
+                                    // categorias (solo en modo manual)
+                                    categoryTabs: isBarcodeMode
+                                        ? const SizedBox.shrink()
+                                        : CategoryTabsSection(
+                                            onCategorySelected: (_) {},
+                                            onClearSearch: () {
+                                              _searchController.clear();
+                                              context.read<ProductBloc>().add(
+                                                  const SearchProducts(''));
+                                            },
+                                          ),
+                                    // grilla de productos o logs del carrito
+                                    productGrid: isBarcodeMode
+                                        ? _buildCartLogsInCatalog()
+                                        : ProductGridSection(
+                                            onProductTap: (product, quantity,
+                                                isDeleteMode) {
+                                              if (isDeleteMode) {
+                                                final cartBloc =
+                                                    context.read<CartBloc>();
+                                                final quantityInCart = cartBloc
+                                                    .getProductQuantityInCart(
+                                                        product.id.toString());
+
+                                                if (quantityInCart >=
+                                                    quantity) {
+                                                  cartBloc.add(
+                                                      RemoveQuantityFromCart(
+                                                          product.id.toString(),
+                                                          quantity));
+                                                } else if (quantityInCart > 0) {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Solo hay $quantityInCart unidades de ${product.name} en el carrito. No se puede eliminar $quantity.',
+                                                      ),
+                                                      duration: const Duration(
+                                                          seconds: 2),
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                      backgroundColor:
+                                                          AppColors.warning,
+                                                    ),
+                                                  );
+                                                } else {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                          '${product.name} no está en el carrito'),
+                                                      duration: const Duration(
+                                                          seconds: 1),
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                      backgroundColor:
+                                                          AppColors.info,
+                                                    ),
+                                                  );
+                                                }
+                                              } else {
+                                                if (product.price != null) {
+                                                  context.read<CartBloc>().add(
+                                                      AddToCart(product,
+                                                          quantity: quantity));
+                                                }
+                                              }
+                                              context
+                                                  .read<UiBloc>()
+                                                  .add(ResetQuantity());
+                                            },
+                                          ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Panel de carrito
+                  const Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                      width: 380,
+                      child: CartPanel(),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
