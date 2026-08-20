@@ -30,7 +30,7 @@ class CompletedOrder extends Equatable {
   final double iibbTax;
   final double? iibbTaxPercentage;
   final double vatPerception;
-  final Map<String, double>? vatPerceptionByRate; 
+  final Map<String, double>? vatPerceptionByRate;
   final double internalTax;
   final double? internalTaxRate;
   final int? priceListId;
@@ -38,6 +38,9 @@ class CompletedOrder extends Equatable {
   final int? branchId;
   final int? externalId;
   final bool isAnnulled;
+  final String? cae;
+  final String? caeDueDate;
+  final String? caeQrCode;
 
   const CompletedOrder({
     required this.id,
@@ -72,6 +75,9 @@ class CompletedOrder extends Equatable {
     this.branchId,
     this.externalId,
     this.isAnnulled = false,
+    this.cae,
+    this.caeDueDate,
+    this.caeQrCode,
   });
 
   CompletedOrder copyWith({
@@ -107,6 +113,9 @@ class CompletedOrder extends Equatable {
     int? branchId,
     int? externalId,
     bool? isAnnulled,
+    String? cae,
+    String? caeDueDate,
+    String? caeQrCode,
   }) {
     return CompletedOrder(
       id: id ?? this.id,
@@ -141,6 +150,9 @@ class CompletedOrder extends Equatable {
       branchId: branchId ?? this.branchId,
       externalId: externalId ?? this.externalId,
       isAnnulled: isAnnulled ?? this.isAnnulled,
+      cae: cae ?? this.cae,
+      caeDueDate: caeDueDate ?? this.caeDueDate,
+      caeQrCode: caeQrCode ?? this.caeQrCode,
     );
   }
 
@@ -178,5 +190,8 @@ class CompletedOrder extends Equatable {
         branchId,
         externalId,
         isAnnulled,
+        cae,
+        caeDueDate,
+        caeQrCode,
       ];
 }

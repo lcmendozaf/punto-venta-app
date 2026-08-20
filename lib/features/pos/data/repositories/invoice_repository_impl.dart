@@ -1,8 +1,9 @@
 import 'package:punto_venta_app/features/pos/data/datasources/invoice_remote_datasource.dart';
+import 'package:punto_venta_app/features/pos/domain/entities/invoice_response.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/print_job.dart';
 
 abstract class InvoiceRepository {
-  Future<Map<String, String?>> sendInvoice(PrintJob job);
+  Future<InvoiceResponse> sendInvoice(PrintJob job);
 }
 
 class InvoiceRepositoryImpl implements InvoiceRepository {
@@ -11,7 +12,8 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
   InvoiceRepositoryImpl({required this.remote});
 
   @override
-  Future<Map<String, String?>> sendInvoice(PrintJob job) async {
-    return await remote.sendInvoice(job);
+  Future<InvoiceResponse> sendInvoice(PrintJob job) async {
+    final responseModel = await remote.sendInvoice(job);
+    return responseModel.toEntity();
   }
 }

@@ -3,6 +3,7 @@ import 'package:retrofit/retrofit.dart';
 import 'package:punto_venta_app/core/network/error_handler.dart';
 import 'package:punto_venta_app/features/pos/data/models/invoice_payload_model.dart';
 import 'package:punto_venta_app/features/pos/data/models/tax_model.dart';
+import 'package:punto_venta_app/features/pos/data/models/invoice_response_model.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/print_job.dart';
 import 'package:punto_venta_app/features/pos/domain/repositories/tax_repository.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
@@ -18,7 +19,7 @@ abstract class InvoiceService {
 }
 
 abstract class InvoiceRemoteDataSource {
-  Future<Map<String, String?>> sendInvoice(PrintJob job);
+  Future<InvoiceResponseModel> sendInvoice(PrintJob job);
 }
 
 class InvoiceRemoteDataSourceImpl implements InvoiceRemoteDataSource {
@@ -30,7 +31,7 @@ class InvoiceRemoteDataSourceImpl implements InvoiceRemoteDataSource {
   });
 
   @override
-  Future<Map<String, String?>> sendInvoice(PrintJob job) async {
+  Future<InvoiceResponseModel> sendInvoice(PrintJob job) async {
     List<TaxModel> taxes = [];
     try {
       taxes = await taxRepository.getTaxes();
@@ -43,10 +44,7 @@ class InvoiceRemoteDataSourceImpl implements InvoiceRemoteDataSource {
     try {
       final Map<String, dynamic> data = await _apiService.sendInvoice(payload);
 
-      final ticketId = data['ticketId']?.toString() ?? job.ticketId ?? "";
-      final description = data['description']?.toString();
-
-      return {'ticketId': ticketId, 'description': description};
+      return InvoiceResponseModel.fromJson(data, defaultTicketId: job.ticketId);
     } catch (e) {
       throw Exception(ErrorHandler.handleError(e,
           defaultMessage: 'Error al enviar factura'));

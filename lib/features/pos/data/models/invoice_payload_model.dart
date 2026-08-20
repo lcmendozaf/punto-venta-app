@@ -26,6 +26,9 @@ class InvoicePayload {
   final String? typeCode;
   final String? description;
   final bool isAnnulled;
+  final String? cae;
+  final String? caeDueDate;
+  final String? caeQrCode;
 
   InvoicePayload({
     this.ticketId,
@@ -43,6 +46,9 @@ class InvoicePayload {
     this.typeCode,
     this.description,
     this.isAnnulled = false,
+    this.cae,
+    this.caeDueDate,
+    this.caeQrCode,
   });
 
   static Map<String, dynamic> _serializeTax(TaxModel t) {
@@ -72,6 +78,9 @@ class InvoicePayload {
         'totalTax':
             totalTax.map((t) => InvoicePayload._serializeTax(t)).toList(),
         'items': logItems,
+        if (cae != null) 'cae': cae,
+        if (caeDueDate != null) 'cae_due_date': caeDueDate,
+        if (caeQrCode != null) 'cae_qr_code': caeQrCode,
       };
 
   factory InvoicePayload.fromJson(Map<String, dynamic> json) {
@@ -101,6 +110,9 @@ class InvoicePayload {
       typeCode: json['type_code'] as String?,
       description: json['description'] as String?,
       isAnnulled: json['is_annulled'] as bool? ?? false,
+      cae: json['cae']?.toString(),
+      caeDueDate: json['cae_due_date']?.toString(),
+      caeQrCode: json['cae_qr_code']?.toString(),
     );
   }
 
@@ -364,6 +376,9 @@ class InvoicePayload {
       saleType: TicketType.factura,
       typeCode: TicketType.factura,
       isAnnulled: false,
+      cae: job.cae,
+      caeDueDate: job.caeDueDate,
+      caeQrCode: job.caeQrCode,
     );
   }
 }

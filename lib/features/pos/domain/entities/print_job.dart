@@ -15,7 +15,7 @@ class PrintJob {
   final double iibbTax;
   final double? iibbTaxPercentage;
   final double vatPerception;
-  final Map<String, double>? vatPerceptionByRate; 
+  final Map<String, double>? vatPerceptionByRate;
   final double internalTax;
   final double? internalTaxRate;
   final String? clientName;
@@ -39,6 +39,9 @@ class PrintJob {
   final TicketTemplateType templateType;
   final bool isCopy;
   final bool isCreditNote;
+  final String? cae;
+  final String? caeDueDate;
+  final String? caeQrCode;
 
   const PrintJob({
     required this.items,
@@ -72,5 +75,8 @@ class PrintJob {
     this.templateType = TicketTemplateType.standard,
     this.isCopy = false,
     this.isCreditNote = false,
+    this.cae,
+    this.caeDueDate,
+    this.caeQrCode,
   });
 }

@@ -8,7 +8,7 @@ class WhiteMarketTicketTemplate extends BaseTicketTemplate {
   WhiteMarketTicketTemplate({required super.printJob});
 
   @override
-  List<TicketCommand> build() {
+  Future<List<TicketCommand>> build() async {
     final commands = <TicketCommand>[];
 
     // === ENCABEZADO ===
@@ -19,7 +19,8 @@ class WhiteMarketTicketTemplate extends BaseTicketTemplate {
 
     // === ITEMS ===
     // Precios según showPricesWithTax (controlado por tax_details)
-    commands.addAll(buildItemsDetailed(showPricesWithTax: printJob.showPricesWithTax));
+    commands.addAll(
+        buildItemsDetailed(showPricesWithTax: printJob.showPricesWithTax));
 
     // === TOTALES ===
     // Si showSubtotalAndTax=true (tax_details=true) → desglose completo
@@ -33,8 +34,8 @@ class WhiteMarketTicketTemplate extends BaseTicketTemplate {
     // === INFORMACIÓN ADICIONAL ===
     commands.addAll(buildAdditionalInfo());
 
-    // === CÓDIGO DE BARRAS ===
-    commands.addAll(buildBarcode());
+    // === CÓDIGO QR ===
+    commands.addAll(await buildQrCode());
 
     // === PIE DE PÁGINA ===
     commands.addAll(buildFooter());

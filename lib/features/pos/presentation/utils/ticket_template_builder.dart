@@ -15,9 +15,9 @@ class TicketTemplateBuilder {
 
   /// Construye el contenido del ticket en formato de lista de comandos
   /// según el template configurado
-  List<TicketCommand> build() {
+  Future<List<TicketCommand>> build() async {
     final BaseTicketTemplate template = _getTemplate();
-    return template.build();
+    return await template.build();
   }
 
   /// Obtiene la instancia del template apropiado según el tipo

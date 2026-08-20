@@ -86,6 +86,11 @@ class CompletedOrderModel {
   final int? externalId;
   @JsonKey(name: 'is_annulled')
   final bool isAnnulled;
+  final String? cae;
+  @JsonKey(name: 'cae_due_date')
+  final String? caeDueDate;
+  @JsonKey(name: 'cae_qr_code')
+  final String? caeQrCode;
 
   const CompletedOrderModel({
     required this.id,
@@ -120,6 +125,9 @@ class CompletedOrderModel {
     this.branchId,
     this.externalId,
     this.isAnnulled = false,
+    this.cae,
+    this.caeDueDate,
+    this.caeQrCode,
   });
 
   factory CompletedOrderModel.fromJson(Map<String, dynamic> json) =>
@@ -161,6 +169,9 @@ class CompletedOrderModel {
       branchId: branchId,
       externalId: externalId,
       isAnnulled: isAnnulled,
+      cae: cae,
+      caeDueDate: caeDueDate,
+      caeQrCode: caeQrCode,
     );
   }
 
@@ -198,6 +209,9 @@ class CompletedOrderModel {
       branchId: order.branchId,
       externalId: order.externalId,
       isAnnulled: order.isAnnulled,
+      cae: order.cae,
+      caeDueDate: order.caeDueDate,
+      caeQrCode: order.caeQrCode,
     );
   }
 }
@@ -210,7 +224,9 @@ PaymentMethod? _paymentMethodFromJson(Map<String, dynamic>? json) {
     shortDescription: json['short_description'] as String,
     deleteAt: json['delete_at'] as String,
     amount: json['amount'] != null ? (json['amount'] as num).toDouble() : null,
-    receivedAmount: json['received_amount'] != null ? (json['received_amount'] as num).toDouble() : null,
+    receivedAmount: json['received_amount'] != null
+        ? (json['received_amount'] as num).toDouble()
+        : null,
     details: json['details'] != null
         ? PaymentMethodDetails.fromJson(json['details'] as Map<String, dynamic>)
         : null,
@@ -225,8 +241,10 @@ Map<String, dynamic>? _paymentMethodToJson(PaymentMethod? paymentMethod) {
     'short_description': paymentMethod.shortDescription,
     'delete_at': paymentMethod.deleteAt,
     if (paymentMethod.amount != null) 'amount': paymentMethod.amount,
-    if (paymentMethod.receivedAmount != null) 'received_amount': paymentMethod.receivedAmount,
-    if (paymentMethod.details != null) 'details': paymentMethod.details!.toJson(),
+    if (paymentMethod.receivedAmount != null)
+      'received_amount': paymentMethod.receivedAmount,
+    if (paymentMethod.details != null)
+      'details': paymentMethod.details!.toJson(),
   };
 }
 
@@ -238,16 +256,22 @@ List<PaymentMethod>? _paymentMethodsFromJson(List<dynamic>? json) {
             description: item['description'] as String,
             shortDescription: item['short_description'] as String,
             deleteAt: item['delete_at'] as String,
-            amount: item['amount'] != null ? (item['amount'] as num).toDouble() : null,
-            receivedAmount: item['received_amount'] != null ? (item['received_amount'] as num).toDouble() : null,
+            amount: item['amount'] != null
+                ? (item['amount'] as num).toDouble()
+                : null,
+            receivedAmount: item['received_amount'] != null
+                ? (item['received_amount'] as num).toDouble()
+                : null,
             details: item['details'] != null
-                ? PaymentMethodDetails.fromJson(item['details'] as Map<String, dynamic>)
+                ? PaymentMethodDetails.fromJson(
+                    item['details'] as Map<String, dynamic>)
                 : null,
           ))
       .toList();
 }
 
-List<Map<String, dynamic>>? _paymentMethodsToJson(List<PaymentMethod>? paymentMethods) {
+List<Map<String, dynamic>>? _paymentMethodsToJson(
+    List<PaymentMethod>? paymentMethods) {
   if (paymentMethods == null) return null;
   return paymentMethods
       .map((pm) => {

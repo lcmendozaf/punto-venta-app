@@ -182,6 +182,9 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
       templateType: templateType,
       isCopy: false,
       isCreditNote: _isCreditNote,
+      cae: ticketToUse.cae,
+      caeDueDate: ticketToUse.caeDueDate,
+      caeQrCode: ticketToUse.caeQrCode,
     );
 
     if (mounted) {
@@ -519,6 +522,9 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
       templateType: _printJob!.templateType,
       isCopy: isCopy,
       isCreditNote: _printJob!.isCreditNote,
+      cae: _printJob!.cae,
+      caeDueDate: _printJob!.caeDueDate,
+      caeQrCode: _printJob!.caeQrCode,
     );
 
     // Disparar evento de impresión
@@ -658,10 +664,7 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
 
             // Información de la orden
             Text('Orden: ${widget.ticket.id}'),
-            if (widget.ticket.templateType == TicketTemplateType.whiteMarket &&
-                widget.ticket.description != null &&
-                widget.ticket.description!.isNotEmpty)
-              Text(widget.ticket.description!),
+            Text(widget.ticket.description!),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -899,6 +902,21 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
             Text(
                 'Total de artículos: ${widget.ticket.items.fold(0, (previousValue, element) => previousValue + element.quantity)}'),
 
+            if (widget.ticket.templateType ==
+                TicketTemplateType.whiteMarket) ...[
+              const SizedBox(height: 8),
+              if (widget.ticket.cae != null) ...[
+                Text('CAE: ${widget.ticket.cae}'),
+              ],
+              if (widget.ticket.caeDueDate != null) ...[
+                Text('Vencimiento CAE: ${widget.ticket.caeDueDate}'),
+              ],
+              const SizedBox(height: 8),
+              const Text("Orientacion al Consumidor"),
+              const Text("Provincia de Buenos Aires"),
+              const Text("0800-222-9042 (Ley 13133)"),
+            ],
+
             const SizedBox(height: 16),
             const Center(
               child: Text(
@@ -919,7 +937,7 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
 
   double _getDisplayUnitPrice(CartItem item, double basePrice,
       {required bool showPricesWithTax}) {
-    if (!showPricesWithTax) {
+    if (showPricesWithTax) {
       return basePrice;
     }
     double priceWithTax = _calculatePriceWithTax(basePrice, item.product.vat);

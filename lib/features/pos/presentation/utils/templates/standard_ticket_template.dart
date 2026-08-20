@@ -7,7 +7,7 @@ class StandardTicketTemplate extends BaseTicketTemplate {
   StandardTicketTemplate({required super.printJob});
 
   @override
-  List<TicketCommand> build() {
+  Future<List<TicketCommand>> build() async {
     final commands = <TicketCommand>[];
 
     // === ENCABEZADO ===

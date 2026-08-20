@@ -357,6 +357,7 @@ Future<void> init() async {
       clientLocalDataSource: sl(),
       taxLocalDataSource: sl(),
       paymentMethodRepository: sl(),
+      taxRepository: sl(),
     ),
   );
   sl.registerLazySingleton<ClientRepository>(

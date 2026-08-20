@@ -34,7 +34,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   final ProcessPartialReturnUseCase processPartialReturnUseCase;
   final CalculateOrderTaxesUseCase calculateOrderTaxesUseCase;
   final SharedPreferences sharedPreferences;
- 
+
   CheckoutBloc({
     required this.authLocalDataSource,
     required this.pdvLocalDataSource,
@@ -70,21 +70,10 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       // Validar número de sucursal
       final branchNumber = config?.branchNumber ?? '';
 
-      // if (branchNumber == null || branchNumber.trim().isEmpty) {
-      //   emit(const CheckoutError(
-      //     message: 'Configure el número de sucursal antes de realizar cobros.',
-      //   ));
-      //   return;
-      // }
-
       // Obtener información de la sucursal y categoría IVA para determinar plantillas
       final branchIdToUse = event.branchId ?? config?.branchId;
       final branch = branchIdToUse != null
           ? await branchLocalDataSource.getBranchById(branchIdToUse)
-          : null;
-
-      final vatCategory = event.client?.vatCategoryId != null
-          ? await _getVatCategoryById(event.client!.vatCategoryId!)
           : null;
 
       // Calcular impuestos usando el caso de uso centralizado
@@ -105,27 +94,9 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
       // Determinar template automáticamente
       TicketTemplateType templateType = TicketTemplateType.standard;
-      bool showSubtotalAndTax = false;
-      bool showPricesWithTax = true;
-
-      bool? clientTaxDetails;
-      if (vatCategory != null) {
-        clientTaxDetails = vatCategory.taxDetails;
-      }
 
       templateType = TicketTemplateResolver.resolveTemplate(
         branchAfipAvailable: branch?.afipAvailable,
-      );
-
-      showPricesWithTax = TicketTemplateResolver.shouldShowPricesWithTax(
-        templateType: templateType,
-        clientTaxDetails: clientTaxDetails,
-      );
-
-      showSubtotalAndTax = TicketTemplateResolver.shouldShowSubtotalAndTax(
-        templateType: templateType,
-        clientTaxDetails: clientTaxDetails,
-        hasClient: event.client != null,
       );
 
       // Obtener datos fiscales del emisor si es operación en blanco
@@ -139,7 +110,8 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         }
       }
 
-      final currentTicketId = sharedPreferences.getString('current_ticket_id') ?? const Uuid().v4();
+      final currentTicketId =
+          sharedPreferences.getString('current_ticket_id') ?? const Uuid().v4();
 
       // Crear PrintJob (sin ticketId definitivo)
       final tempPrintJob = PrintJob(
@@ -164,8 +136,6 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         timestamp: DateTime.now(),
         enterprise: enterprise,
         fiscalIssuerData: fiscalData,
-        showSubtotalAndTax: showSubtotalAndTax,
-        showPricesWithTax: showPricesWithTax,
         receivedAmount: event.receivedAmount,
         change: event.change,
         branchNumber: branchNumber,
@@ -175,12 +145,16 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
       // Enviar factura y obtener ticketId y description
       final invoiceResponse = await sendInvoiceUseCase(tempPrintJob);
- 
+
       // Eliminar el ticketId de SharedPreferences tras una respuesta exitosa del backend
       await sharedPreferences.remove('current_ticket_id');
 
-      final ticketId = invoiceResponse['ticketId'] ?? '';
-      final description = invoiceResponse['description'];
+      final ticketId = invoiceResponse.ticketId;
+      final description = invoiceResponse.description;
+      final cae = invoiceResponse.cae;
+      final caeDueDate = invoiceResponse.caeDueDate;
+      final detailedTaxes = invoiceResponse.detailedTaxes;
+      final caeQrCode = invoiceResponse.caeQrCode;
 
       // PrintJob final con el ticketId y description
       final finalPrintJob = PrintJob(
@@ -205,14 +179,17 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         timestamp: tempPrintJob.timestamp,
         enterprise: enterprise,
         fiscalIssuerData: fiscalData,
-        showSubtotalAndTax: showSubtotalAndTax,
-        showPricesWithTax: showPricesWithTax,
+        showSubtotalAndTax: detailedTaxes,
+        showPricesWithTax: detailedTaxes,
         receivedAmount: event.receivedAmount,
         change: event.change,
         branchNumber: branchNumber,
         branchId: branchIdToUse,
         description: description,
         templateType: templateType,
+        cae: cae,
+        caeDueDate: caeDueDate,
+        caeQrCode: caeQrCode,
       );
 
       await completeOrderUsecase.fromPrintJob(finalPrintJob);

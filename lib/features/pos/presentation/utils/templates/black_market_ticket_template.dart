@@ -7,7 +7,7 @@ class BlackMarketTicketTemplate extends BaseTicketTemplate {
   BlackMarketTicketTemplate({required super.printJob});
 
   @override
-  List<TicketCommand> build() {
+  Future<List<TicketCommand>> build() async {
     final commands = <TicketCommand>[];
 
     // === ENCABEZADO ===
@@ -18,7 +18,7 @@ class BlackMarketTicketTemplate extends BaseTicketTemplate {
 
     // === ITEMS ===
     // En blackMarket mostramos precios con IVA incluido para simplicidad
-    commands.addAll(buildItemsDetailed(showPricesWithTax: true));
+    commands.addAll(buildItemsDetailed(showPricesWithTax: false));
 
     // === TOTALES SIMPLIFICADOS ===
     commands.addAll(buildSimplifiedTotals());
@@ -26,8 +26,8 @@ class BlackMarketTicketTemplate extends BaseTicketTemplate {
     // === INFORMACIÓN ADICIONAL ===
     commands.addAll(buildAdditionalInfo());
 
-    // === CÓDIGO DE BARRAS ===
-    commands.addAll(buildBarcode());
+    // // === CÓDIGO DE BARRAS ===
+    // commands.addAll(buildBarcode());
 
     // === PIE DE PÁGINA ===
     commands.addAll(buildFooter());

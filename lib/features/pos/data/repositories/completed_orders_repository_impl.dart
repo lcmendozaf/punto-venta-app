@@ -16,6 +16,7 @@ import 'package:punto_venta_app/features/pos/domain/entities/completed_order.dar
 import 'package:punto_venta_app/features/pos/domain/entities/payment_method.dart';
 import 'package:punto_venta_app/features/pos/domain/repositories/completed_orders_repository.dart';
 import 'package:punto_venta_app/features/pos/domain/repositories/payment_method_repository.dart';
+import 'package:punto_venta_app/features/pos/domain/repositories/tax_repository.dart';
 import 'package:punto_venta_app/features/pos/presentation/utils/ticket_template_resolver.dart';
 
 class CompletedOrdersRepositoryImpl implements CompletedOrdersRepository {
@@ -26,6 +27,7 @@ class CompletedOrdersRepositoryImpl implements CompletedOrdersRepository {
   final ClientLocalDataSource clientLocalDataSource;
   final TaxLocalDataSource taxLocalDataSource;
   final PaymentMethodRepository paymentMethodRepository;
+  final TaxRepository taxRepository;
 
   CompletedOrdersRepositoryImpl({
     required this.localDataSource,
@@ -35,6 +37,7 @@ class CompletedOrdersRepositoryImpl implements CompletedOrdersRepository {
     required this.clientLocalDataSource,
     required this.taxLocalDataSource,
     required this.paymentMethodRepository,
+    required this.taxRepository,
   });
 
   @override
@@ -361,7 +364,15 @@ class CompletedOrdersRepositoryImpl implements CompletedOrdersRepository {
       );
     }).toList();
 
-    final taxesFromBackend = await taxLocalDataSource.getCachedTaxes() ?? [];
+    var taxesFromBackend = await taxLocalDataSource.getCachedTaxes() ?? [];
+    if (taxesFromBackend.isEmpty) {
+      try {
+        taxesFromBackend = await taxRepository.getTaxes();
+      } catch (e) {
+        print(
+            'Error fetching taxes from remote in completed orders repository mapping: $e');
+      }
+    }
 
     final ivaTaxIds = <int>{};
     final iibbTaxIds = <int>{};
@@ -400,24 +411,52 @@ class CompletedOrdersRepositoryImpl implements CompletedOrdersRepository {
       final taxId = tax.id;
       final amount = tax.amount ?? 0.0;
       final percentage = tax.percentage ?? 0.0;
+      final description = (tax.description ?? '').toLowerCase();
 
-      // Clasificar según el ID que viene del backend en el ticket
-      if (ivaTaxIds.contains(taxId)) {
-        // IVA
+      bool isIva = false;
+      bool isIibb = false;
+      bool isVatPercep = false;
+      bool isInternal = false;
+
+      // 1. Clasificar por descripción si viene disponible
+      if (description.isNotEmpty) {
+        if (description.contains('iva') && !description.contains('percep')) {
+          isIva = true;
+        } else if (description.contains('iibb')) {
+          isIibb = true;
+        } else if (description.contains('percep') &&
+            description.contains('iva')) {
+          isVatPercep = true;
+        } else if (description.contains('impint')) {
+          isInternal = true;
+        }
+      }
+
+      // 2. Si no pudimos clasificar por descripción, usar el ID contra las tasas del backend
+      if (!isIva && !isIibb && !isVatPercep && !isInternal) {
+        if (ivaTaxIds.contains(taxId)) {
+          isIva = true;
+        } else if (iibbTaxIds.contains(taxId)) {
+          isIibb = true;
+        } else if (vatPerceptionTaxIds.contains(taxId)) {
+          isVatPercep = true;
+        } else if (internalTaxIds.contains(taxId)) {
+          isInternal = true;
+        }
+      }
+
+      if (isIva) {
         ivaTax += amount;
-      } else if (iibbTaxIds.contains(taxId)) {
-        // Percepción IIBB
+      } else if (isIibb) {
         iibbTax += amount;
         iibbTaxPercentage = percentage > 0 ? percentage : null;
-      } else if (vatPerceptionTaxIds.contains(taxId)) {
-        // Percepción IVA
+      } else if (isVatPercep) {
         vatPerception += amount;
         if (percentage > 0) {
           vatPerceptionByRate ??= {};
           vatPerceptionByRate[percentage.toString()] = amount;
         }
-      } else if (internalTaxIds.contains(taxId)) {
-        // Impuesto Interno
+      } else if (isInternal) {
         internalTax += amount;
         internalTaxRate = percentage > 0 ? percentage : null;
       }
@@ -513,6 +552,9 @@ class CompletedOrdersRepositoryImpl implements CompletedOrdersRepository {
       branchId: ticket.branchId,
       externalId: ticket.externalId,
       isAnnulled: ticket.isAnnulled,
+      cae: ticket.cae,
+      caeDueDate: ticket.caeDueDate,
+      caeQrCode: ticket.caeQrCode,
     );
   }
 

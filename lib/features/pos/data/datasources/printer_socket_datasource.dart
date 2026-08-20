@@ -73,7 +73,7 @@ class PrinterSocketDatasourceImpl implements PrinterSocketDatasource {
       final templateBuilder = TicketTemplateBuilder(
         printJob: printJob,
       );
-      final commands = templateBuilder.build();
+      final commands = await templateBuilder.build();
 
       // Ejecutar cada comando
       for (final command in commands) {
