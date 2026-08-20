@@ -225,41 +225,6 @@ class _CartPanelState extends State<CartPanel> {
                                               isReturnMode: isReturnMode,
                                               isConfirmEnabled:
                                                   isConfirmEnabled,
-                                              onClear: () {
-                                                showDialog(
-                                                    context: context,
-                                                    builder: (context) {
-                                                      return AlertDialog(
-                                                        title: const Text(
-                                                            'Limpiar Pedido'),
-                                                        content: const Text(
-                                                            '¿Está seguro de que desea limpiar el carrito?'),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(
-                                                                  context);
-                                                            },
-                                                            child: const Text(
-                                                                'Cancelar'),
-                                                          ),
-                                                          TextButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(
-                                                                  context);
-                                                              context
-                                                                  .read<
-                                                                      CartBloc>()
-                                                                  .add(
-                                                                      ClearCart());
-                                                            },
-                                                            child: const Text(
-                                                                'Confirmar'),
-                                                          ),
-                                                        ],
-                                                      );
-                                                    });
-                                              },
                                               onConfirm: () {
                                                 if (state.items.isNotEmpty) {
                                                   if (!isBarcodeMode) {

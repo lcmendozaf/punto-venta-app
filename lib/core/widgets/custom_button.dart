@@ -11,6 +11,7 @@ class CustomButton extends StatelessWidget {
   final Color? iconColor;
   final double? width;
   final double height;
+  final TextStyle? textStyle;
 
   const CustomButton({
     super.key,
@@ -23,6 +24,7 @@ class CustomButton extends StatelessWidget {
     this.iconColor,
     this.width,
     this.height = AppDimensions.buttonHeightM,
+    this.textStyle,
   });
 
   @override
@@ -55,7 +57,10 @@ class CustomButton extends StatelessWidget {
                     ),
                     const SizedBox(width: AppDimensions.paddingS),
                   ],
-                  Text(text),
+                  Text(
+                    text,
+                    style: textStyle,
+                  ),
                 ],
               ),
       ),

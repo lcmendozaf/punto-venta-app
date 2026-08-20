@@ -53,6 +53,29 @@ class CartPanelHeader extends StatelessWidget {
     );
   }
 
+  void _showClearCartConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Limpiar Pedido'),
+        content: const Text('¿Está seguro de que desea limpiar el carrito?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<CartBloc>().add(ClearCart());
+            },
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -71,6 +94,7 @@ class CartPanelHeader extends StatelessWidget {
       child: BlocBuilder<CartBloc, CartState>(
         builder: (context, cartState) {
           final total = cartState is CartLoaded ? cartState.totalConIva : 0.0;
+          final hasItems = cartState is CartLoaded && cartState.items.isNotEmpty;
 
           return BlocBuilder<UiBloc, UiState>(
             builder: (context, uiState) {
@@ -132,13 +156,15 @@ class CartPanelHeader extends StatelessWidget {
                           // Menú Hamburguesa
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.menu, color: Colors.black87),
-                            tooltip: 'Cambiar modo',
+                            tooltip: 'Cambiar modo / vaciar',
                             onSelected: (value) {
                               if (value == 'venta' && isReturnMode) {
                                 _showChangeModeConfirmation(context, false);
                               } else if (value == 'devolucion' &&
                                   !isReturnMode) {
                                 _showChangeModeConfirmation(context, true);
+                              } else if (value == 'vaciar') {
+                                _showClearCartConfirmation(context);
                               }
                             },
                             itemBuilder: (BuildContext context) =>
@@ -202,6 +228,30 @@ class CartPanelHeader extends StatelessWidget {
                                       const Icon(Icons.check,
                                           color: AppColors.warning, size: 18),
                                     ],
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'vaciar',
+                                enabled: hasItems,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete_outline,
+                                      color: hasItems
+                                          ? AppColors.error
+                                          : Colors.grey,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Vaciar',
+                                      style: TextStyle(
+                                        color: hasItems
+                                            ? AppColors.error
+                                            : Colors.grey,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

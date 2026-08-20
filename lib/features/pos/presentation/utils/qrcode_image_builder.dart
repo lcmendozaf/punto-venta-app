@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:barcode/barcode.dart';
@@ -128,20 +129,22 @@ class QrCodeImageBuilder {
     final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
     final uint8List = pngBytes!.buffer.asUint8List();
 
-    try {
-      final file = File('/Users/brayan/Desktop/last_qr_code.png');
-      await file.writeAsBytes(uint8List);
-      debugPrint('QR image saved locally to macOS Desktop: ${file.path}');
-    } catch (e) {
-      debugPrint(
-          'Could not save to Desktop, saving to application documents directory: $e');
+    if (kDebugMode) {
       try {
-        final directory = await getApplicationDocumentsDirectory();
-        final file = File('${directory.path}/last_qr_code.png');
+        final file = File('/Users/brayan/Desktop/last_qr_code.png');
         await file.writeAsBytes(uint8List);
-        debugPrint('QR image saved locally to: ${file.path}');
-      } catch (innerE) {
-        debugPrint('Error saving QR image locally: $innerE');
+        debugPrint('QR image saved locally to macOS Desktop: ${file.path}');
+      } catch (e) {
+        debugPrint(
+            'Could not save to Desktop, saving to application documents directory: $e');
+        try {
+          final directory = await getApplicationDocumentsDirectory();
+          final file = File('${directory.path}/last_qr_code.png');
+          await file.writeAsBytes(uint8List);
+          debugPrint('QR image saved locally to: ${file.path}');
+        } catch (innerE) {
+          debugPrint('Error saving QR image locally: $innerE');
+        }
       }
     }
 

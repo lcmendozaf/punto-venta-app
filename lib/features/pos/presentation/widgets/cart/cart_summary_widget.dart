@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/core/constants/app_string.dart';
-import 'package:punto_venta_app/core/utils/extensions.dart';
 import 'package:punto_venta_app/core/widgets/custom_button.dart';
 
 class CartSummary extends StatelessWidget {
@@ -10,7 +9,6 @@ class CartSummary extends StatelessWidget {
   final double totalIva;
   final double totalConIva;
   final bool isReturnMode;
-  final VoidCallback onClear;
   final VoidCallback onConfirm;
   final bool isConfirmEnabled;
 
@@ -20,7 +18,6 @@ class CartSummary extends StatelessWidget {
     required this.totalIva,
     required this.totalConIva,
     this.isReturnMode = false,
-    required this.onClear,
     required this.onConfirm,
     this.isConfirmEnabled = true,
   });
@@ -33,21 +30,16 @@ class CartSummary extends StatelessWidget {
         children: [
           // cobrar
           CustomButton(
-            height: 30,
+            height: 50,
             width: double.infinity,
             text: isReturnMode ? 'Devolución' : AppStrings.confirm,
             onPressed: isConfirmEnabled ? onConfirm : null,
             backgroundColor: isConfirmEnabled
                 ? (isReturnMode ? AppColors.warning : AppColors.green)
                 : Colors.grey,
-          ),
-          const SizedBox(height: AppDimensions.paddingS),
-          CustomButton(
-            height: 30,
-            width: double.infinity,
-            text: AppStrings.empty,
-            onPressed: onClear,
-            backgroundColor: AppColors.error,
+            textStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                ),
           ),
         ],
       ),
