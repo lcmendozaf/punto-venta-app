@@ -26,8 +26,8 @@ class BlackMarketTicketTemplate extends BaseTicketTemplate {
     // === INFORMACIÓN ADICIONAL ===
     commands.addAll(buildAdditionalInfo());
 
-    // // === CÓDIGO DE BARRAS ===
-    // commands.addAll(buildBarcode());
+    // // === CÓDIGO QR ===
+    // commands.addAll(await buildQrCode());
 
     // === PIE DE PÁGINA ===
     commands.addAll(buildFooter());

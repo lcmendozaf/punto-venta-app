@@ -354,6 +354,19 @@ abstract class BaseTicketTemplate {
     commands.add(TicketCommand.text(buildSeparator('_')));
     commands.add(TicketCommand.feedLine());
 
+    if (printJob.templateType == TicketTemplateType.whiteMarket) {
+      // Siempre mostrar IVA aunque sea 0
+      final taxAmount = printJob.totalTax.formatToCurrency();
+      commands.add(TicketCommand.feedLine());
+      commands.add(
+          TicketCommand.text("Regimen de transparencia fiscal al consumidor"));
+      commands.add(TicketCommand.feedLine());
+      commands.add(TicketCommand.text("(LEY 22743)"));
+      commands.add(TicketCommand.feedLine());
+
+      commands.add(TicketCommand.lineWithValue("IVA CONTENIDO:", taxAmount));
+    }
+
     return commands;
   }
 
@@ -426,11 +439,13 @@ abstract class BaseTicketTemplate {
       final qrImageBytes = await QrCodeImageBuilder.buildQrCodeImage(
         qrData: qrUrl ?? '',
         textLines: textLines,
+        width: 416,
+        qrSize: 250,
       );
 
       return [
         TicketCommand.alignment(TicketAlignment.center),
-        TicketCommand.image(qrImageBytes, 576),
+        TicketCommand.image(qrImageBytes, 416),
         TicketCommand.feedLine(),
       ];
     } catch (e) {
