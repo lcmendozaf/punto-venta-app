@@ -3,12 +3,14 @@ class PdvConfig {
   final int? branchId;
   final String? branchNumber;
   final bool? offlineMode;
+  final int? creditNoteDaysLimit;
 
   const PdvConfig({
     this.pdvId,
     this.branchId,
     this.branchNumber,
     this.offlineMode,
+    this.creditNoteDaysLimit,
   });
 
   PdvConfig copyWith({
@@ -16,12 +18,14 @@ class PdvConfig {
     int? branchId,
     String? branchNumber,
     bool? offlineMode,
+    int? creditNoteDaysLimit,
   }) {
     return PdvConfig(
       pdvId: pdvId ?? this.pdvId,
       branchId: branchId ?? this.branchId,
       branchNumber: branchNumber ?? this.branchNumber,
       offlineMode: offlineMode ?? this.offlineMode,
+      creditNoteDaysLimit: creditNoteDaysLimit ?? this.creditNoteDaysLimit,
     );
   }
 
@@ -30,12 +34,14 @@ class PdvConfig {
         'branch_id': branchId,
         'branch_number': branchNumber,
         'offline_mode': offlineMode,
+        'credit_note_days_limit': creditNoteDaysLimit,
       };
 
   Map<String, dynamic> toUpdateJson() {
     final Map<String, dynamic> data = {};
     if (pdvId != null) data['delivery_location_id'] = pdvId;
     if (branchId != null) data['branch_id'] = branchId;
+    if (creditNoteDaysLimit != null) data['credit_note_days_limit'] = creditNoteDaysLimit;
     return data;
   }
 
@@ -50,6 +56,7 @@ class PdvConfig {
         branchId: json['branch_id'] as int?,
         branchNumber: json['branch_number'] as String?,
         offlineMode: json['offline_mode'] as bool?,
+        creditNoteDaysLimit: json['credit_note_days_limit'] as int?,
       );
 }
 

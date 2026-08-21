@@ -24,8 +24,12 @@ import 'package:punto_venta_app/features/pos/data/datasources/branch_local_datas
 import 'package:punto_venta_app/features/pos/data/datasources/completed_orders_local_datasource.dart';
 import 'package:punto_venta_app/features/pos/data/datasources/completed_orders_remote_datasource.dart';
 import 'package:punto_venta_app/features/pos/data/datasources/returns_remote_datasource.dart';
+import 'package:punto_venta_app/features/pos/data/datasources/refunds_remote_datasource.dart';
 import 'package:punto_venta_app/features/pos/data/repositories/returns_repository_impl.dart';
+import 'package:punto_venta_app/features/pos/data/repositories/refunds_repository_impl.dart';
 import 'package:punto_venta_app/features/pos/domain/repositories/returns_repository.dart';
+import 'package:punto_venta_app/features/pos/domain/repositories/refunds_repository.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/refunds/refunds_cubit.dart';
 import 'package:punto_venta_app/features/pos/data/datasources/invoice_remote_datasource.dart';
 import 'package:punto_venta_app/features/pos/data/datasources/ticket_config_local_datasource.dart';
 import 'package:punto_venta_app/features/pos/data/datasources/ticket_config_remote_datasource.dart';
@@ -239,6 +243,9 @@ Future<void> init() async {
         loadSavedOrdersUsecase: sl(),
         sharedPreferences: sl(),
       ));
+  sl.registerFactory(() => RefundsCubit(
+        repository: sl(),
+      ));
   sl.registerFactory(() =>
       ReportsBloc(getReportsUsecase: sl(), generateCreditNoteUsecase: sl()));
   sl.registerFactory(() => SettlementsBloc(getSettlementsUsecase: sl()));
@@ -344,6 +351,9 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<ReturnsRepository>(
     () => ReturnsRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton<RefundsRepository>(
+    () => RefundsRepositoryImpl(remoteDataSource: sl()),
   );
   sl.registerLazySingleton<SettlementsRepository>(
     () => SettlementsRepositoryImpl(remoteDataSource: sl()),
@@ -476,6 +486,12 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<ReturnsRemoteDataSource>(
     () => ReturnsRemoteDataSourceImpl(),
+  );
+  sl.registerLazySingleton<RefundsService>(
+    () => RefundsService(sl()),
+  );
+  sl.registerLazySingleton<RefundsRemoteDataSource>(
+    () => RefundsRemoteDataSourceImpl(),
   );
   sl.registerLazySingleton<SettlementsService>(
     () => SettlementsService(sl()),

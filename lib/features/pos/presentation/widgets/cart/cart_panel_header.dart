@@ -10,6 +10,7 @@ import 'package:punto_venta_app/features/pos/presentation/bloc/cart/cart_state.d
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_event.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_state.dart';
+import 'package:punto_venta_app/features/pos/presentation/widgets/dialogs/refund/refund_dialog.dart';
 
 class CartPanelHeader extends StatelessWidget {
   const CartPanelHeader({super.key});
@@ -94,7 +95,8 @@ class CartPanelHeader extends StatelessWidget {
       child: BlocBuilder<CartBloc, CartState>(
         builder: (context, cartState) {
           final total = cartState is CartLoaded ? cartState.totalConIva : 0.0;
-          final hasItems = cartState is CartLoaded && cartState.items.isNotEmpty;
+          final hasItems =
+              cartState is CartLoaded && cartState.items.isNotEmpty;
 
           return BlocBuilder<UiBloc, UiState>(
             builder: (context, uiState) {
@@ -156,7 +158,7 @@ class CartPanelHeader extends StatelessWidget {
                           // Menú Hamburguesa
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.menu, color: Colors.black87),
-                            tooltip: 'Cambiar modo / vaciar',
+                            tooltip: 'Cambiar modo / vaciar / reintegro',
                             onSelected: (value) {
                               if (value == 'venta' && isReturnMode) {
                                 _showChangeModeConfirmation(context, false);
@@ -165,6 +167,8 @@ class CartPanelHeader extends StatelessWidget {
                                 _showChangeModeConfirmation(context, true);
                               } else if (value == 'vaciar') {
                                 _showClearCartConfirmation(context);
+                              } else if (value == 'reintegro') {
+                                showRefundDialog(context);
                               }
                             },
                             itemBuilder: (BuildContext context) =>
@@ -228,6 +232,26 @@ class CartPanelHeader extends StatelessWidget {
                                       const Icon(Icons.check,
                                           color: AppColors.warning, size: 18),
                                     ],
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem<String>(
+                                value: 'reintegro',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.monetization_on_outlined,
+                                      color: Colors.grey,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      'Reintegro de dinero',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.normal,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

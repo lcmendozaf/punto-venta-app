@@ -48,6 +48,7 @@ class _PdvSettingsDialogContent extends StatefulWidget {
 class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
   final formKey = GlobalKey<FormState>();
   final TextEditingController _clientSearchController = TextEditingController();
+  final TextEditingController _daysLimitController = TextEditingController();
   Timer? _searchDebounce;
 
   List<Branch> _branches = [];
@@ -59,6 +60,7 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
   String _clientSearchQuery = '';
   String? _localError;
   PdvConfig? _pdvConfig;
+  int? _creditNoteDaysLimit;
 
   @override
   void initState() {
@@ -76,6 +78,7 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
   void dispose() {
     _searchDebounce?.cancel();
     _clientSearchController.dispose();
+    _daysLimitController.dispose();
     super.dispose();
   }
 
@@ -119,6 +122,9 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
         orElse: () => branches.isNotEmpty ? branches.first : _selectedBranch!,
       );
     }
+
+    _creditNoteDaysLimit = config.creditNoteDaysLimit;
+    _daysLimitController.text = config.creditNoteDaysLimit?.toString() ?? '';
 
     _syncSelectedClientFromConfig();
   }
@@ -256,6 +262,66 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
                           ),
                         )
                       else ...[
+                        DropdownButtonFormField<Branch>(
+                          value: _selectedBranch,
+                          decoration: const InputDecoration(
+                            labelText: 'Seleccionar Sucursal',
+                            prefixIcon: Icon(Icons.business),
+                            border: OutlineInputBorder(),
+                          ),
+                          items: _branches.map((branch) {
+                            return DropdownMenuItem<Branch>(
+                              value: branch,
+                              child: Text('${branch.name} - Id: ${branch.id}'),
+                            );
+                          }).toList(),
+                          onChanged: _onBranchSelected,
+                          validator: (v) {
+                            if (v == null) {
+                              return 'Selecciona una sucursal';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppDimensions.paddingM),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Configuración de Notas de Crédito',
+                            textAlign: TextAlign.start,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppDimensions.paddingM),
+                        TextFormField(
+                          controller: _daysLimitController,
+                          decoration: const InputDecoration(
+                            labelText: 'Días límite para anulación',
+                            hintText: 'Ej. 30',
+                            prefixIcon: Icon(Icons.calendar_today),
+                            border: OutlineInputBorder(),
+                            helperText:
+                                'Cantidad de días hacia atrás permitidos para anular',
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return null;
+                            }
+                            final parsed = int.tryParse(v);
+                            if (parsed == null || parsed < 0) {
+                              return 'Ingresa un número entero positivo';
+                            }
+                            return null;
+                          },
+                          onChanged: (v) {
+                            _creditNoteDaysLimit = int.tryParse(v);
+                          },
+                        ),
+                        const SizedBox(height: AppDimensions.paddingM),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -267,28 +333,6 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
                               ),
                             ),
                             const SizedBox(height: AppDimensions.paddingM),
-                            DropdownButtonFormField<Branch>(
-                              value: _selectedBranch,
-                              decoration: const InputDecoration(
-                                labelText: 'Seleccionar Sucursal',
-                                prefixIcon: Icon(Icons.business),
-                                border: OutlineInputBorder(),
-                              ),
-                              items: _branches.map((branch) {
-                                return DropdownMenuItem<Branch>(
-                                  value: branch,
-                                  child:
-                                      Text('${branch.name} - Id: ${branch.id}'),
-                                );
-                              }).toList(),
-                              onChanged: _onBranchSelected,
-                              validator: (v) {
-                                if (v == null) {
-                                  return 'Selecciona una sucursal';
-                                }
-                                return null;
-                              },
-                            ),
                             PdvSelectedClientStatus(
                               selectedClient: _selectedClient,
                               isAdmin: widget.isAdmin,
@@ -360,10 +404,12 @@ class _PdvSettingsDialogContentState extends State<_PdvSettingsDialogContent> {
                         final pdvId = _selectedClient!.id;
                         final branchId = _selectedBranch!.id;
 
-                        final newConfig = PdvConfig(
+                        final newConfig =
+                            (_pdvConfig ?? const PdvConfig()).copyWith(
                           pdvId: pdvId,
                           branchId: branchId,
-                          branchNumber: '',
+                          branchNumber: _pdvConfig?.branchNumber ?? '',
+                          creditNoteDaysLimit: _creditNoteDaysLimit,
                         );
 
                         context

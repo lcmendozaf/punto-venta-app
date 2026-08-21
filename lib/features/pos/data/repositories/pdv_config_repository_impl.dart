@@ -27,6 +27,7 @@ class PdvConfigRepositoryImpl implements PdvConfigRepository {
         pdvId: data.deliveryLocationId,
         branchId: data.branchId,
         offlineMode: data.offlineMode,
+        creditNoteDaysLimit: data.creditNoteDaysLimit,
       );
 
       final finalData = PdvConfig(
@@ -34,6 +35,7 @@ class PdvConfigRepositoryImpl implements PdvConfigRepository {
         branchId: remoteConfig.branchId ?? localConfig?.branchId,
         branchNumber: remoteConfig.branchNumber ?? localConfig?.branchNumber,
         offlineMode: remoteConfig.offlineMode ?? localConfig?.offlineMode,
+        creditNoteDaysLimit: remoteConfig.creditNoteDaysLimit ?? localConfig?.creditNoteDaysLimit,
       );
       await localDataSource.savePdvConfig(finalData);
       return finalData;
