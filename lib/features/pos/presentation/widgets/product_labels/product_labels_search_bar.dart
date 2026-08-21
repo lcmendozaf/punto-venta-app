@@ -25,15 +25,16 @@ class _ProductLabelsSearchBarState extends State<ProductLabelsSearchBar> {
   Widget build(BuildContext context) {
     return BlocBuilder<ProductLabelsBloc, ProductLabelsState>(
       builder: (context, state) {
-        if (state is! ProductLabelsLoaded) return const SizedBox.shrink();
+        final isLoaded = state is ProductLabelsLoaded;
+        final categories = isLoaded ? state.categories : const <String>[];
 
         return Row(
           children: [
-            Expanded(child: _buildSearchField()),
+            Expanded(child: _buildSearchField(isLoaded)),
             const SizedBox(width: 16),
             SizedBox(
               width: 250,
-              child: _buildCategoryDropdown(state),
+              child: _buildCategoryDropdown(isLoaded, categories),
             ),
           ],
         );
@@ -41,13 +42,14 @@ class _ProductLabelsSearchBarState extends State<ProductLabelsSearchBar> {
     );
   }
 
-  Widget _buildSearchField() {
+  Widget _buildSearchField(bool enabled) {
     return TextField(
       controller: _searchController,
+      enabled: enabled,
       decoration: InputDecoration(
         hintText: 'Buscar productos...',
         prefixIcon: const Icon(Icons.search),
-        suffixIcon: _searchController.text.isNotEmpty
+        suffixIcon: _searchController.text.isNotEmpty && enabled
             ? IconButton(
                 icon: const Icon(Icons.clear),
                 onPressed: () {
@@ -72,7 +74,8 @@ class _ProductLabelsSearchBarState extends State<ProductLabelsSearchBar> {
       },
     );
   }
-  Widget _buildCategoryDropdown(ProductLabelsLoaded state) {
+
+  Widget _buildCategoryDropdown(bool enabled, List<String> categories) {
     return DropdownButtonFormField<String>(
       value: _selectedCategoryId,
       isExpanded: true,
@@ -95,7 +98,7 @@ class _ProductLabelsSearchBarState extends State<ProductLabelsSearchBar> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        ...state.categories.where((cat) => cat.isNotEmpty).map((category) {
+        ...categories.where((cat) => cat.isNotEmpty).map((category) {
           return DropdownMenuItem(
             value: category,
             child: Text(
@@ -105,18 +108,20 @@ class _ProductLabelsSearchBarState extends State<ProductLabelsSearchBar> {
           );
         }).toList(),
       ],
-      onChanged: (value) {
-        setState(() {
-          _selectedCategoryId = value;
-        });
-        if (value == null) {
-          context.read<ProductLabelsBloc>().add(const LoadProducts());
-        } else {
-          context
-              .read<ProductLabelsBloc>()
-              .add(LoadProductsByCategory(value));
-        }
-      },
+      onChanged: enabled
+          ? (value) {
+              setState(() {
+                _selectedCategoryId = value;
+              });
+              if (value == null) {
+                context.read<ProductLabelsBloc>().add(const LoadProducts());
+              } else {
+                context
+                    .read<ProductLabelsBloc>()
+                    .add(LoadProductsByCategory(value));
+              }
+            }
+          : null,
     );
   }
 }

@@ -24,6 +24,8 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
     required this.printerLocalDataSource,
   }) : super(ProductLabelsInitial()) {
     on<LoadProducts>(_onLoadProducts);
+    on<ProductsUpdated>(_onProductsUpdated);
+    on<ProductsErrorOccurred>(_onProductsErrorOccurred);
     on<LoadProductsByCategory>(_onLoadProductsByCategory);
     on<SearchProducts>(_onSearchProducts);
     on<ToggleProductSelection>(_onToggleProductSelection);
@@ -46,49 +48,71 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
     LoadProducts event,
     Emitter<ProductLabelsState> emit,
   ) async {
+    print('DEBUG: ProductLabelsBloc._onLoadProducts() started');
     await _productsSubscription?.cancel();
     _productsSubscription = null;
 
     emit(ProductLabelsLoading());
     try {
+      print('DEBUG: ProductLabelsBloc fetching current list...');
       int currentList = await priceListLocalDataSource.getCurrentPriceList();
       if (currentList <= 0) {
         currentList = 1;
         await priceListLocalDataSource.savePriceList(currentList);
       }
+      print('DEBUG: ProductLabelsBloc current list is $currentList');
 
       await getProductsUsecase.updatePriceList(currentList);
 
+      print('DEBUG: ProductLabelsBloc fetching categories...');
       final categories = await getProductsUsecase.getCategories();
+      print('DEBUG: ProductLabelsBloc categories fetched: ${categories.length}');
 
-      final completer = Completer<void>();
-
+      print('DEBUG: ProductLabelsBloc listening to getProductsUsecase() stream...');
       _productsSubscription = getProductsUsecase().listen(
         (products) {
-          if (!emit.isDone) {
-            emit(ProductLabelsLoaded(
-              products: products,
-              categories: categories,
-              selectedProducts: const [],
-            ));
-          }
+          print('DEBUG: ProductLabelsBloc stream yielded products. Count: ${products.length}');
+          add(ProductsUpdated(products: products, categories: categories));
         },
         onError: (error, stackTrace) {
-          if (!emit.isDone) {
-            if (state is! ProductLabelsLoaded) {
-              emit(ProductLabelsError(error.toString()));
-            }
-          }
-          completer.complete();
-        },
-        onDone: () {
-          completer.complete();
+          print('DEBUG: ProductLabelsBloc stream error: $error');
+          add(ProductsErrorOccurred(error.toString()));
         },
       );
-
-      await completer.future;
     } catch (e) {
+      print('DEBUG: ProductLabelsBloc catch error: $e');
       emit(ProductLabelsError(e.toString()));
+    }
+  }
+
+  void _onProductsUpdated(
+    ProductsUpdated event,
+    Emitter<ProductLabelsState> emit,
+  ) {
+    print('DEBUG: ProductLabelsBloc._onProductsUpdated() called. Count: ${event.products.length}');
+    if (state is ProductLabelsLoaded) {
+      final currentState = state as ProductLabelsLoaded;
+      emit(currentState.copyWith(
+        allProducts: event.products,
+        categories: event.categories,
+      ));
+    } else {
+      emit(ProductLabelsLoaded(
+        allProducts: event.products,
+        categories: event.categories,
+        selectedProducts: const [],
+      ));
+    }
+    print('DEBUG: ProductLabelsBloc state is now ${state.runtimeType}');
+  }
+
+  void _onProductsErrorOccurred(
+    ProductsErrorOccurred event,
+    Emitter<ProductLabelsState> emit,
+  ) {
+    print('DEBUG: ProductLabelsBloc._onProductsErrorOccurred() called. Error: ${event.error}');
+    if (state is! ProductLabelsLoaded) {
+      emit(ProductLabelsError(event.error));
     }
   }
 
@@ -97,22 +121,8 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
     Emitter<ProductLabelsState> emit,
   ) async {
     if (state is! ProductLabelsLoaded) return;
-
     final currentState = state as ProductLabelsLoaded;
-    emit(ProductLabelsLoading());
-
-    try {
-      final products = await getProductsUsecase.getByCategory(event.categoryId);
-
-      emit(ProductLabelsLoaded(
-        products: products,
-        categories: currentState.categories,
-        selectedProducts: currentState.selectedProducts,
-        selectedCategoryId: event.categoryId,
-      ));
-    } catch (e) {
-      emit(ProductLabelsError(e.toString()));
-    }
+    emit(currentState.copyWith(selectedCategoryId: event.categoryId));
   }
 
   Future<void> _onSearchProducts(
@@ -120,22 +130,8 @@ class ProductLabelsBloc extends Bloc<ProductLabelsEvent, ProductLabelsState> {
     Emitter<ProductLabelsState> emit,
   ) async {
     if (state is! ProductLabelsLoaded) return;
-
     final currentState = state as ProductLabelsLoaded;
-    emit(ProductLabelsLoading());
-
-    try {
-      final products = await getProductsUsecase.search(event.query);
-
-      emit(ProductLabelsLoaded(
-        products: products,
-        categories: currentState.categories,
-        selectedProducts: currentState.selectedProducts,
-        searchQuery: event.query,
-      ));
-    } catch (e) {
-      emit(ProductLabelsError(e.toString()));
-    }
+    emit(currentState.copyWith(searchQuery: event.query));
   }
 
   Future<void> _onToggleProductSelection(

@@ -13,23 +13,49 @@ class ProductLabelsInitial extends ProductLabelsState {}
 class ProductLabelsLoading extends ProductLabelsState {}
 
 class ProductLabelsLoaded extends ProductLabelsState {
-  final List<Product> products;
+  final List<Product> allProducts;
   final List<Product> selectedProducts;
   final List<String> categories;
   final String? selectedCategoryId;
   final String searchQuery;
 
   const ProductLabelsLoaded({
-    required this.products,
+    required this.allProducts,
     this.selectedProducts = const [],
     this.categories = const [],
     this.selectedCategoryId,
     this.searchQuery = '',
   });
 
+  List<Product> get products {
+    List<Product> filtered = allProducts;
+    if (selectedCategoryId != null &&
+        selectedCategoryId!.toLowerCase() != 'todo' &&
+        selectedCategoryId!.toLowerCase() != 'all') {
+      filtered = filtered
+          .where((p) =>
+              p.categoryDescription.toLowerCase() ==
+              selectedCategoryId!.toLowerCase())
+          .toList();
+    }
+    if (searchQuery.isNotEmpty) {
+      final query = searchQuery.toLowerCase();
+      filtered = filtered
+          .where((p) =>
+              p.description.toLowerCase().contains(query) ||
+              p.id.toString().contains(query) ||
+              (p.barcodes?.any((b) =>
+                      b.barcode != null &&
+                      b.barcode.toString().toLowerCase().contains(query)) ??
+                  false))
+          .toList();
+    }
+    return filtered;
+  }
+
   @override
   List<Object?> get props => [
-        products,
+        allProducts,
         selectedProducts,
         categories,
         selectedCategoryId,
@@ -37,14 +63,14 @@ class ProductLabelsLoaded extends ProductLabelsState {
       ];
 
   ProductLabelsLoaded copyWith({
-    List<Product>? products,
+    List<Product>? allProducts,
     List<Product>? selectedProducts,
     List<String>? categories,
     String? selectedCategoryId,
     String? searchQuery,
   }) {
     return ProductLabelsLoaded(
-      products: products ?? this.products,
+      allProducts: allProducts ?? this.allProducts,
       selectedProducts: selectedProducts ?? this.selectedProducts,
       categories: categories ?? this.categories,
       selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,

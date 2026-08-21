@@ -16,6 +16,8 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     required this.priceListLocalDataSource,
   }) : super(ProductInitial()) {
     on<LoadProducts>(_onLoadProducts);
+    on<ProductsUpdated>(_onProductsUpdated);
+    on<ProductsErrorOccurred>(_onProductsErrorOccurred);
     on<LoadProductsByCategory>(_onLoadProductsByCategory);
     on<SearchProducts>(_onSearchProducts);
     on<LoadCategories>(_onLoadCategories);
@@ -48,34 +50,50 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       // se traen las categorías primero
       final categories = await getProductsUsecase.getCategories();
 
-      final completer = Completer<void>();
-
       _productsSubscription = getProductsUsecase().listen(
         (products) {
-          if (!emit.isDone) {
-            emit(ProductLoaded(
-              products: products,
-              categories: categories,
-              currentPriceList: currentList,
-            ));
-          }
+          add(ProductsUpdated(
+            products: products,
+            categories: categories,
+            priceListId: currentList,
+          ));
         },
         onError: (error, stackTrace) {
-          if (!emit.isDone) {
-            if (state is! ProductLoaded) {
-              emit(ProductError(error.toString()));
-            }
-          }
-          completer.complete();
-        },
-        onDone: () {
-          completer.complete();
+          add(ProductsErrorOccurred(error.toString()));
         },
       );
-
-      await completer.future;
     } catch (e) {
       emit(ProductError(e.toString()));
+    }
+  }
+
+  void _onProductsUpdated(
+    ProductsUpdated event,
+    Emitter<ProductState> emit,
+  ) {
+    if (state is ProductLoaded) {
+      final currentState = state as ProductLoaded;
+      if (currentState.currentPriceList == event.priceListId) {
+        emit(currentState.copyWith(
+          allProducts: event.products,
+          categories: event.categories,
+        ));
+      }
+    } else {
+      emit(ProductLoaded(
+        allProducts: event.products,
+        categories: event.categories,
+        currentPriceList: event.priceListId,
+      ));
+    }
+  }
+
+  void _onProductsErrorOccurred(
+    ProductsErrorOccurred event,
+    Emitter<ProductState> emit,
+  ) {
+    if (state is! ProductLoaded) {
+      emit(ProductError(event.error));
     }
   }
 
@@ -85,19 +103,10 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   ) async {
     if (state is ProductLoaded) {
       final currentState = state as ProductLoaded;
-      emit(ProductLoading());
-
-      try {
-        final products = await getProductsUsecase.getByCategory(event.category);
-
-        emit(currentState.copyWith(
-          products: products,
-          selectedCategory: event.category,
-          searchQuery: '',
-        ));
-      } catch (e) {
-        emit(ProductError(e.toString()));
-      }
+      emit(currentState.copyWith(
+        selectedCategory: event.category,
+        searchQuery: '',
+      ));
     }
   }
 
@@ -107,19 +116,11 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   ) async {
     if (state is ProductLoaded) {
       final currentState = state as ProductLoaded;
-
-      try {
-        final products = await getProductsUsecase.search(event.query);
-
-        emit(currentState.copyWith(
-          products: products,
-          searchQuery: event.query,
-          selectedCategory:
-              event.query.isEmpty ? currentState.selectedCategory : 'Todo',
-        ));
-      } catch (e) {
-        emit(ProductError(e.toString()));
-      }
+      emit(currentState.copyWith(
+        searchQuery: event.query,
+        selectedCategory:
+            event.query.isEmpty ? currentState.selectedCategory : 'Todo',
+      ));
     }
   }
 
@@ -157,30 +158,18 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       // se traen las categorías primero
       final categories = await getProductsUsecase.getCategories();
 
-      final completer = Completer<void>();
-
       _productsSubscription = getProductsUsecase().listen(
         (products) {
-          if (!emit.isDone) {
-            emit(ProductLoaded(
-              products: products,
-              categories: categories,
-              currentPriceList: listId,
-            ));
-          }
+          add(ProductsUpdated(
+            products: products,
+            categories: categories,
+            priceListId: listId,
+          ));
         },
         onError: (error, stackTrace) {
-          if (!emit.isDone) {
-            emit(ProductError(error.toString()));
-          }
-          completer.complete();
-        },
-        onDone: () {
-          completer.complete();
+          add(ProductsErrorOccurred(error.toString()));
         },
       );
-
-      await completer.future;
     } catch (e) {
       emit(ProductError(e.toString()));
     }

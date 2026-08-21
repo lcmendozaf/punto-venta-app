@@ -13,6 +13,25 @@ class LoadProducts extends ProductLabelsEvent {
   const LoadProducts();
 }
 
+class ProductsUpdated extends ProductLabelsEvent {
+  final List<Product> products;
+  final List<String> categories;
+
+  const ProductsUpdated({required this.products, required this.categories});
+
+  @override
+  List<Object> get props => [products, categories];
+}
+
+class ProductsErrorOccurred extends ProductLabelsEvent {
+  final String error;
+
+  const ProductsErrorOccurred(this.error);
+
+  @override
+  List<Object> get props => [error];
+}
+
 class LoadProductsByCategory extends ProductLabelsEvent {
   final String categoryId;
 

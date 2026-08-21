@@ -97,6 +97,7 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
 
   @override
   void setListaPrecio(int lista) {
+    if (_listaActual == lista) return;
     _listaActual = lista;
     clearCache();
   }
@@ -107,12 +108,15 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
 
   @override
   Stream<List<ProductModel>> getProducts() async* {
+    print('DEBUG: ProductLocalDataSourceImpl.getProducts() started');
     if (_cachedMappedProducts != null && _cachedMappedProducts!.isNotEmpty) {
+      print('DEBUG: getProducts() yielding cached products. Count: ${_cachedMappedProducts!.length}');
       yield _cachedMappedProducts!;
     }
 
-    // Se traen todos los códigos de barras en paralelo una única vez
+    print('DEBUG: getProducts() fetching barcodes...');
     final barcodes = await _fetchBarcodes();
+    print('DEBUG: getProducts() barcodes fetched. Count: ${barcodes.length}');
 
     // Agrupar los códigos de barras por id de producto para una asociación rápida
     final barcodesByProduct = <int, List<BarcodeModel>>{};
@@ -135,14 +139,17 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
     _cachedMappedProducts ??= [];
     _cachedBarcodeToProductMap ??= {};
 
+    print('DEBUG: getProducts() chunk loop starting...');
     while (hasMore) {
       try {
+        print('DEBUG: getProducts() requesting chunk skip: $skip, limit: $chunkSize');
         final productsChunk = await _apiService.getProducts(
           skip: skip,
           limit: chunkSize,
           listId: _listaActual,
           isSuspendedSale: 'N',
         );
+        print('DEBUG: getProducts() chunk received. Count: ${productsChunk.length}');
 
         if (productsChunk.isEmpty) {
           hasMore = false;
@@ -295,14 +302,19 @@ class ProductLocalDataSourceImpl implements ProductLocalDataSource {
   // ---------------------------------------------------------------------------
 
   Future<List<BarcodeModel>> _fetchBarcodes() async {
+    print('DEBUG: _fetchBarcodes() started');
     if (_cachedBarcodes != null) {
+      print('DEBUG: _fetchBarcodes() returning cached barcodes. Count: ${_cachedBarcodes!.length}');
       return _cachedBarcodes!;
     }
 
     try {
+      print('DEBUG: _fetchBarcodes() calling API getBarcodes...');
       _cachedBarcodes = await _apiService.getBarcodes();
+      print('DEBUG: _fetchBarcodes() API call success. Count: ${_cachedBarcodes!.length}');
       return _cachedBarcodes!;
     } catch (e) {
+      print('DEBUG: _fetchBarcodes() API call failed. Error: $e');
       _cachedBarcodes = [];
       return _cachedBarcodes!;
     }
