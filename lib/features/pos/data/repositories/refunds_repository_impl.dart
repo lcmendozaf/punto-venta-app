@@ -1,6 +1,7 @@
 import 'package:punto_venta_app/features/pos/data/datasources/refunds_remote_datasource.dart';
 import 'package:punto_venta_app/features/pos/data/models/cash_refund_request_model.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/refund_reason.dart';
+import 'package:punto_venta_app/features/pos/domain/entities/completed_order.dart';
 import 'package:punto_venta_app/features/pos/domain/repositories/refunds_repository.dart';
 
 class RefundsRepositoryImpl implements RefundsRepository {
@@ -15,7 +16,7 @@ class RefundsRepositoryImpl implements RefundsRepository {
   }
 
   @override
-  Future<void> processCashRefund({
+  Future<CompletedOrder> processCashRefund({
     required int branchId,
     required double refundAmount,
     required int refundReasonId,
@@ -27,6 +28,8 @@ class RefundsRepositoryImpl implements RefundsRepository {
       refundReasonId: refundReasonId,
       clientId: clientId,
     );
-    await remoteDataSource.processCashRefund(request);
+    final model = await remoteDataSource.processCashRefund(request);
+    return model.toCompletedOrder();
   }
 }
+

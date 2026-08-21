@@ -12,6 +12,8 @@ import 'package:punto_venta_app/features/pos/presentation/bloc/refunds/refunds_s
 import 'package:punto_venta_app/features/pos/presentation/bloc/clients/clients_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/clients/clients_state.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/common/error_dialog.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/printer/printer_bloc.dart';
+import 'package:punto_venta_app/features/pos/presentation/bloc/printer/printer_event.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
 
 void showRefundDialog(BuildContext context) {
@@ -90,6 +92,11 @@ class _RefundDialogState extends State<RefundDialog> {
     return BlocConsumer<RefundsCubit, RefundsState>(
       listener: (context, state) {
         if (state.status == RefundsStatus.success) {
+          // if (state.printJob != null) {
+          //   context.read<PrinterBloc>().add(PrintTicket(
+          //         printJob: state.printJob!,
+          //       ));
+          // }
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

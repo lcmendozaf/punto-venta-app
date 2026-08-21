@@ -245,6 +245,8 @@ Future<void> init() async {
       ));
   sl.registerFactory(() => RefundsCubit(
         repository: sl(),
+        authLocalDataSource: sl(),
+        fiscalIssuerDataRepository: sl(),
       ));
   sl.registerFactory(() =>
       ReportsBloc(getReportsUsecase: sl(), generateCreditNoteUsecase: sl()));
