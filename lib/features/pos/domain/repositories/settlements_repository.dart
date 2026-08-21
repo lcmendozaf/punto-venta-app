@@ -4,5 +4,5 @@ import 'package:punto_venta_app/features/pos/data/models/pending_collectors_resp
 abstract class SettlementsRepository {
   Future<List<PendingCollectorsResponseModel>> fetchPendingCollectors(String date);
   Future<PendingCollectorsDetailResponseModel> getPendingCollectorDetail(
-      String collectorId);
+      String collectorId, String date);
 }

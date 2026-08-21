@@ -12,18 +12,20 @@ import 'package:punto_venta_app/injection_container.dart' as di;
 class CollectorDetailDialog extends StatelessWidget {
   final String collectorId;
   final String collectorName;
+  final String date;
 
   const CollectorDetailDialog({
     super.key,
     required this.collectorId,
     required this.collectorName,
+    required this.date
   });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => di.sl<SettlementsBloc>()
-        ..add(FetchPendingCollectorDetail(collectorId: collectorId)),
+        ..add(FetchPendingCollectorDetail(collectorId: collectorId, date: date)),
       child: Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.borderRadiusM),
@@ -34,6 +36,7 @@ class CollectorDetailDialog extends StatelessWidget {
           child: _CollectorDetailDialogContent(
             collectorId: collectorId,
             collectorName: collectorName,
+            date: date,
           ),
         ),
       ),
@@ -44,10 +47,12 @@ class CollectorDetailDialog extends StatelessWidget {
 class _CollectorDetailDialogContent extends StatelessWidget {
   final String collectorId;
   final String collectorName;
+  final String date;
 
   const _CollectorDetailDialogContent({
     required this.collectorId,
     required this.collectorName,
+    required this.date
   });
 
   @override
@@ -157,7 +162,7 @@ class _CollectorDetailDialogContent extends StatelessWidget {
                           onPressed: () {
                             context.read<SettlementsBloc>().add(
                                   FetchPendingCollectorDetail(
-                                      collectorId: collectorId),
+                                      collectorId: collectorId, date: date),
                                 );
                           },
                           icon: const Icon(Icons.refresh),

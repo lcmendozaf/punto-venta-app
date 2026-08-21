@@ -52,12 +52,14 @@ class _PendingSettlementsPageState extends State<PendingSettlementsPage> {
 
   void _showCollectorDetail(
       BuildContext context, String collectorId, String name) {
+    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => CollectorDetailDialog(
         collectorId: collectorId,
         collectorName: name,
+        date: dateStr
       ),
     );
   }

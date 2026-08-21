@@ -13,7 +13,7 @@ class GetSettlementsUsecase {
   }
 
   Future<PendingCollectorsDetailResponseModel> getPendingCollectorDetail(
-      String collectorId) async {
-    return await repository.getPendingCollectorDetail(collectorId);
+      String collectorId, String date) async {
+    return await repository.getPendingCollectorDetail(collectorId, date);
   }
 }

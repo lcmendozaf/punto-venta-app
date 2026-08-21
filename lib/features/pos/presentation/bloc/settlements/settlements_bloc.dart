@@ -36,7 +36,7 @@ class SettlementsBloc extends Bloc<SettlementsEvent, SettlementsState> {
 
     try {
       final pendingCollectorDetail = await getSettlementsUsecase
-          .getPendingCollectorDetail(event.collectorId);
+          .getPendingCollectorDetail(event.collectorId, event.date);
 
       emit(PendingCollectorsDetailLoaded(pendingCollectorDetail));
     } catch (e) {

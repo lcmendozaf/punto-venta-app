@@ -16,9 +16,9 @@ class SettlementsRepositoryImpl implements SettlementsRepository {
 
   @override
   Future<PendingCollectorsDetailResponseModel> getPendingCollectorDetail(
-      String collectorId) async {
+      String collectorId, String date) async {
     final models = await remoteDataSource.getPendingCollectorDetail(
-        collectorId: collectorId);
+        collectorId: collectorId, date: date);
     return models;
   }
 }

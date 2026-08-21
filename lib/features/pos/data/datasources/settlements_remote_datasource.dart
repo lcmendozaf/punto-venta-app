@@ -17,14 +17,16 @@ abstract class SettlementsService {
 
   @GET('/settlements/pending/{collector_id}')
   Future<PendingCollectorsDetailResponseModel> getPendingCollectorDetail(
-      {@Path('collector_id') required String collectorId});
+      {@Path('collector_id') required String collectorId,
+        @Query('date') required String date
+      });
 }
 
 abstract class SettlementsRemoteDataSource {
   Future<List<PendingCollectorsResponseModel>> getPendingCollectors(
       {required String date});
   Future<PendingCollectorsDetailResponseModel> getPendingCollectorDetail(
-      {required String collectorId});
+      {required String collectorId, required String date});
 }
 
 class SettlementsRemoteDataSourceImpl implements SettlementsRemoteDataSource {
@@ -45,10 +47,11 @@ class SettlementsRemoteDataSourceImpl implements SettlementsRemoteDataSource {
 
   @override
   Future<PendingCollectorsDetailResponseModel> getPendingCollectorDetail(
-      {required String collectorId}) async {
+      {required String collectorId, required String date}) async {
     try {
       return await _apiService.getPendingCollectorDetail(
-          collectorId: collectorId);
+          collectorId: collectorId,
+      date: date);
     } catch (e) {
       throw Exception(ErrorHandler.handleError(e,
           defaultMessage: 'Error al obtener detalle de cobrador'));
