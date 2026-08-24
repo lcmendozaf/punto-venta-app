@@ -1,8 +1,8 @@
 import 'dart:typed_data';
-import 'dart:convert';
 
 import 'package:punto_venta_app/core/constants/ticket_template_types.dart';
 import 'package:punto_venta_app/core/utils/extensions.dart';
+import 'package:punto_venta_app/core/utils/utils.dart' as utils;
 import 'package:punto_venta_app/features/pos/domain/entities/print_job.dart';
 import 'package:punto_venta_app/features/pos/presentation/utils/qrcode_image_builder.dart';
 
@@ -427,7 +427,8 @@ abstract class BaseTicketTemplate {
         textLines.add("CAE: ${printJob.cae}");
       }
       if (printJob.caeDueDate != null && printJob.caeDueDate!.isNotEmpty) {
-        textLines.add("Vto. CAE: ${printJob.caeDueDate}");
+
+        textLines.add("Vto. CAE: ${utils.formatDate(printJob.caeDueDate!, fromDateFormat: 'yyyy-MM-dd', toDateFormat: 'dd/MM/yyyy')}");
       }
 
       if (printJob.templateType == TicketTemplateType.whiteMarket) {

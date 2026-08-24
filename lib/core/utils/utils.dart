@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 
@@ -62,4 +63,14 @@ int calculateCrossAxisCount(double width) {
   if (width > 800) return 3;
   if (width > 500) return 2;
   return 1;
+}
+
+
+String formatDate(String date, {String fromDateFormat='yyyy-MM-dd', String toDateFormat='dd/MM/yyyy'}) {
+  try {
+    final parsedDate = DateFormat(fromDateFormat).parse(date);
+    return DateFormat(toDateFormat).format(parsedDate);
+  } catch (e) {
+    return date;
+  }
 }
