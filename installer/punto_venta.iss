@@ -1,5 +1,5 @@
 #define MyAppName "Punto de Venta"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppExeName "punto_venta_app.exe"
 #define MyAppPublisher "Keuken"
 
@@ -30,12 +30,12 @@ Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; Group
 [Files]
 ; Toda la carpeta Release excepto archivos de desarrollo
 Source: "..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.lib,*.exp,*.pdb,*.ilk,*.zip"
-Source: "redist\vc_redist_x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
+Source: "..\installer\redist\vc_redist_x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Instalando Visual C++ Redistributable..."; Flags: waituntilterminated
+Filename: "{tmp}\vc_redist_x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Instalando Visual C++ Redistributable..."; Flags: waituntilterminated
 Filename: "{app}\{#MyAppExeName}"; Description: "Iniciar {#MyAppName}"; Flags: nowait postinstall skipifsilent
