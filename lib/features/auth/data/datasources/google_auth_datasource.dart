@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/auth_html_templates.dart';
 import 'package:punto_venta_app/core/config/google_auth_config.dart';
 import 'package:punto_venta_app/core/config/pkce_helper.dart';
+import 'package:punto_venta_app/core/utils/app_logger.dart';
 
 abstract class GoogleAuthDataSource {
   Future<String?> signInWithGoogle();
@@ -29,6 +30,7 @@ class GoogleAuthDataSourceImpl implements GoogleAuthDataSource {
 
   @override
   Future<String?> signInWithGoogle() async {
+    AppLogger.info('signInWithGoogle isWindows=$_isWindows');
     if (_isWindows) {
       return _signInWithGoogleWindows();
     }
@@ -62,9 +64,21 @@ class GoogleAuthDataSourceImpl implements GoogleAuthDataSource {
   Future<String?> _signInWithGoogleWindows() async {
     HttpServer? server;
     try {
+      final hasClientId = GoogleAuthConfig.windowsClientId.isNotEmpty;
+      final hasClientSecret = GoogleAuthConfig.windowsClientSecret.isNotEmpty;
+      AppLogger.info(
+        'OAuth Windows: clientIdConfigurado=$hasClientId secretConfigurado=$hasClientSecret',
+      );
+      if (!hasClientId || !hasClientSecret) {
+        throw Exception(
+          'Faltan GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET en el build de Windows.',
+        );
+      }
+
       // Iniciar servidor local en puerto aleatorio
       server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final int port = server.port;
+      AppLogger.info('Servidor OAuth local en http://127.0.0.1:$port');
 
       // Generar PKCE verifier y challenge
       final String codeVerifier = PkceHelper.generateCodeVerifier();
@@ -84,6 +98,7 @@ class GoogleAuthDataSourceImpl implements GoogleAuthDataSource {
 
       // Abrir URL en navegador externo
       if (await canLaunchUrl(authorizationUri)) {
+        AppLogger.info('Abriendo navegador para Google Sign-In...');
         await launchUrl(authorizationUri, mode: LaunchMode.externalApplication);
       } else {
         throw Exception('No se pudo abrir el navegador web del sistema.');
@@ -93,6 +108,9 @@ class GoogleAuthDataSourceImpl implements GoogleAuthDataSource {
       String? authCode;
       await for (var request in server) {
         final uri = request.uri;
+        AppLogger.info(
+          'Callback OAuth: path=${uri.path} params=${uri.queryParameters.keys.toList()} error=${uri.queryParameters['error']}',
+        );
         authCode = uri.queryParameters['code'];
 
         // Enviar respuesta de éxito al navegador
@@ -118,6 +136,7 @@ class GoogleAuthDataSourceImpl implements GoogleAuthDataSource {
         },
       );
 
+      AppLogger.info('Intercambio de tokens HTTP ${tokenResponse.statusCode}');
       if (tokenResponse.statusCode != 200) {
         throw Exception(
             'Error al obtener tokens de Google: ${tokenResponse.body}');
@@ -146,8 +165,10 @@ class GoogleAuthDataSourceImpl implements GoogleAuthDataSource {
         throw Exception('No se pudo encontrar el correo electrónico.');
       }
 
+      AppLogger.info('Google Sign-In Windows OK email=$email');
       return email;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error('Error en Google Sign-In Desktop', e, stackTrace);
       throw Exception('Error en Google Sign-In Desktop: $e');
     } finally {
       await server?.close(force: true);

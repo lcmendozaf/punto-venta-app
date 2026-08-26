@@ -1,4 +1,5 @@
 import 'package:punto_venta_app/core/config/api_config.dart';
+import 'package:punto_venta_app/core/utils/app_logger.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/auth_local_datasources.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/google_auth_datasource.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/firestore_user_datasource.dart';
@@ -26,6 +27,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Map<String, dynamic>> loginWithGoogle() async {
+    AppLogger.info('AuthRepository.loginWithGoogle inicio');
     final googleEmail = await googleAuthDataSource.signInWithGoogle();
 
     if (googleEmail == null) {
@@ -46,12 +48,16 @@ class AuthRepositoryImpl implements AuthRepository {
             'No hay empresas vinculadas a este correo. Por favor contacta al administrador.');
       }
 
+      AppLogger.info(
+        'loginWithGoogle OK empresas=${companies.length} autoSelect=${companies.length == 1}',
+      );
       return {
         'email': googleEmail,
         'companies': companies.map((c) => c.toMap()).toList(),
         'autoSelected': companies.length == 1,
       };
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error('loginWithGoogle falló después de OAuth', e, stackTrace);
       await googleAuthDataSource.signOut();
       rethrow;
     }
@@ -92,8 +98,12 @@ class AuthRepositoryImpl implements AuthRepository {
       orElse: () => throw Exception('Empresa no encontrada'),
     );
 
+    AppLogger.info(
+      'selectCompany email=$email companyId=$companyId name=${selectedCompany.name}',
+    );
     // Obtener PdvBaseUrl desde enterprisesLicense
     final pdvBaseUrl = await firestoreUserDataSource.getEnterpriseLicenseBaseUrl(selectedCompany.id);
+    AppLogger.info('selectCompany pdvBaseUrl=$pdvBaseUrl cachedBaseUrl=${selectedCompany.baseUrl}');
 
     ApiConfig.updateCompanyConfig(
       selectedCompany.id.toString(),

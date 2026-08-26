@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:punto_venta_app/core/utils/app_logger.dart';
 
 class Company {
   final int id;
@@ -16,11 +17,17 @@ class Company {
   factory Company.fromFirestore(
     Map<String, dynamic> data,
   ) {
+    final rawId = data['id'];
+    AppLogger.info(
+      'Company.fromFirestore keys=${data.keys.toList()} id=$rawId (${rawId.runtimeType}) name=${data['name']}',
+    );
     return Company(
-      id: data['id'] ?? '',
-      name: data['name'] ?? '',
+      id: rawId is int ? rawId : int.parse(rawId.toString()),
+      name: data['name']?.toString() ?? '',
       baseUrl: data['baseUrl']?.toString(),
-      listPriceId: data['listPriceId'] ?? 0,
+      listPriceId: data['listPriceId'] is int
+          ? data['listPriceId'] as int
+          : int.tryParse(data['listPriceId']?.toString() ?? '') ?? 0,
     );
   }
 
@@ -40,6 +47,8 @@ abstract class FirestoreUserDataSource {
 }
 
 class FirestoreUserDataSourceImpl implements FirestoreUserDataSource {
+  static const Duration _queryTimeout = Duration(seconds: 20);
+
   final FirebaseFirestore _firestore;
 
   FirestoreUserDataSourceImpl({
@@ -49,9 +58,16 @@ class FirestoreUserDataSourceImpl implements FirestoreUserDataSource {
   @override
   Future<List<Company>> getCompaniesByEmail(String email) async {
     try {
+      AppLogger.info('Firestore getCompaniesByEmail email=$email');
       // validar si el usuario está habilitado
-      final userDoc =
-          await _firestore.collection('usersEmail').doc(email).get();
+      final userDoc = await _firestore
+          .collection('usersEmail')
+          .doc(email)
+          .get()
+          .timeout(_queryTimeout);
+      AppLogger.info(
+        'Firestore usersEmail exists=${userDoc.exists} fromCache=${userDoc.metadata.isFromCache}',
+      );
 
       if (!userDoc.exists) {
         return [];
@@ -59,6 +75,7 @@ class FirestoreUserDataSourceImpl implements FirestoreUserDataSource {
 
       final userData = userDoc.data();
       final isEnabled = userData?['enabled'] ?? false;
+      AppLogger.info('Firestore usersEmail enabled=$isEnabled');
 
       if (!isEnabled) {
         throw Exception(
@@ -66,20 +83,27 @@ class FirestoreUserDataSourceImpl implements FirestoreUserDataSource {
       }
 
       // Si está habilitado, obtener las empresas
+      AppLogger.info('Firestore leyendo subcolección enterprises...');
       final enterprisesSnapshot = await _firestore
           .collection('usersEmail')
           .doc(email)
           .collection('enterprises')
-          .get();
+          .get()
+          .timeout(_queryTimeout);
 
       if (enterprisesSnapshot.docs.isEmpty) {
+        AppLogger.warn('Firestore: sin empresas para $email');
         return [];
       }
 
+      AppLogger.info(
+        'Firestore: ${enterprisesSnapshot.docs.length} empresa(s) para $email',
+      );
       return enterprisesSnapshot.docs.map((doc) {
         return Company.fromFirestore(doc.data());
       }).toList();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error('Error al obtener empresas desde Firestore', e, stackTrace);
       throw Exception('Error al obtener empresas desde Firestore: $e');
     }
   }
@@ -87,10 +111,12 @@ class FirestoreUserDataSourceImpl implements FirestoreUserDataSource {
   @override
   Future<String?> getEnterpriseLicenseBaseUrl(int enterpriseId) async {
     try {
+      AppLogger.info('Firestore getEnterpriseLicenseBaseUrl id=$enterpriseId');
       final licenseDoc = await _firestore
           .collection('enterprisesLicense')
           .doc(enterpriseId.toString())
-          .get();
+          .get()
+          .timeout(_queryTimeout);
 
       if (!licenseDoc.exists) {
         return null;
@@ -98,7 +124,8 @@ class FirestoreUserDataSourceImpl implements FirestoreUserDataSource {
 
       final data = licenseDoc.data();
       return data?['pointOfSaleUrl']?.toString();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error('Error al obtener PdvBaseUrl desde Firestore', e, stackTrace);
       throw Exception('Error al obtener PdvBaseUrl desde Firestore: $e');
     }
   }

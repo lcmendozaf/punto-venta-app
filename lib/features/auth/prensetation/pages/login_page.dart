@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:punto_venta_app/app/routes/route_paths.dart';
 import 'package:punto_venta_app/core/config/api_config.dart';
+import 'package:punto_venta_app/core/utils/app_logger.dart';
 import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/core/constants/app_string.dart';
@@ -41,9 +42,14 @@ class LoginPage extends StatelessWidget {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        try {
+        AppLogger.info('LoginPage listener state=${state.runtimeType}');
         if (state is AuthAuthenticated) {
           context.go(RoutePaths.pos);
         } else if (state is AuthCompanySelected) {
+          AppLogger.info(
+            'Navegando a credentials email=${state.email} companyId=${state.companyId}',
+          );
           context.go(
             RoutePaths.credentials,
             extra: {
@@ -53,8 +59,10 @@ class LoginPage extends StatelessWidget {
             },
           );
         } else if (state is AuthCompanySelectionRequired) {
+          AppLogger.info('Navegando a companySelection empresas=${state.companies.length}');
           context.go(RoutePaths.companySelection);
         } else if (state is AuthError) {
+          AppLogger.error('LoginPage AuthError: ${state.message}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -63,6 +71,10 @@ class LoginPage extends StatelessWidget {
               duration: const Duration(seconds: 4),
             ),
           );
+        }
+        } catch (e, stackTrace) {
+          AppLogger.error('LoginPage listener falló', e, stackTrace);
+          rethrow;
         }
       },
       child: Scaffold(

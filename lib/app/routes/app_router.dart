@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:punto_venta_app/core/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,12 +50,23 @@ class AppRouter {
       GoRoute(
         path: RoutePaths.credentials,
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>;
-          return CredentialsPage(
-            email: extra['email'] as String,
-            companyId: extra['companyId'] as int,
-            companyName: extra['companyName'] as String,
-          );
+          try {
+            AppLogger.info(
+              'Ruta credentials extraType=${state.extra.runtimeType} extra=${state.extra}',
+            );
+            final extra = Map<String, dynamic>.from(state.extra as Map);
+            final rawCompanyId = extra['companyId'];
+            return CredentialsPage(
+              email: extra['email'] as String,
+              companyId: rawCompanyId is int
+                  ? rawCompanyId
+                  : int.parse(rawCompanyId.toString()),
+              companyName: extra['companyName'] as String,
+            );
+          } catch (e, stackTrace) {
+            AppLogger.error('Fallo al construir CredentialsPage', e, stackTrace);
+            rethrow;
+          }
         },
       ),
 

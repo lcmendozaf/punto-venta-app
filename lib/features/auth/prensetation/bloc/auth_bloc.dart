@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:punto_venta_app/core/utils/app_logger.dart';
 import 'package:punto_venta_app/features/auth/domain/usecases/authenticate_user_usecase.dart';
 import 'package:punto_venta_app/features/auth/domain/usecases/change_chashier_usecase.dart';
 import 'package:punto_venta_app/features/auth/domain/usecases/login_with_google_usecase.dart';
@@ -47,27 +48,40 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    AppLogger.info('AuthBloc: LoginWithGoogleRequested');
     try {
       final result = await loginWithGoogleUsecase();
+      AppLogger.info(
+        'AuthBloc: login Google result keys=${result.keys.toList()} autoSelected=${result['autoSelected']}',
+      );
 
       if (result['autoSelected'] == true) {
         final company = result['companies'][0];
+        AppLogger.info(
+          'AuthBloc: autoSelect company id=${company['id']} (${company['id'].runtimeType}) name=${company['name']}',
+        );
         final selectResult = await selectCompanyUsecase(
           result['email'],
-          company['id'],
+          company['id'] is int
+              ? company['id'] as int
+              : int.parse(company['id'].toString()),
         );
 
         emit(AuthCompanySelected(
           email: selectResult['email'],
-          companyId: selectResult['companyId'],
+          companyId: selectResult['companyId'] is int
+              ? selectResult['companyId'] as int
+              : int.parse(selectResult['companyId'].toString()),
           companyName: selectResult['companyName'],
         ));
+        AppLogger.info('AuthBloc: emit AuthCompanySelected (auto)');
       } else {
         emit(AuthCompanySelectionRequired(
           email: result['email'],
           companies: List<Map<String, dynamic>>.from(result['companies']),
           autoSelected: result['autoSelected'],
         ));
+        AppLogger.info('AuthBloc: emit AuthCompanySelectionRequired');
       }
 
       // Para Debug, vista de multiples empresas siempre
@@ -76,7 +90,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       //     companies: List<Map<String, dynamic>>.from(result['companies']),
       //     autoSelected: result['autoSelected'],
       //   ));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error('AuthBloc: LoginWithGoogleRequested falló', e, stackTrace);
       final errorMessage = _extractErrorMessage(e);
       emit(AuthError(message: errorMessage));
     }
