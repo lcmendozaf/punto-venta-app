@@ -4,7 +4,7 @@ import 'package:punto_venta_app/features/pos/data/models/fiscal_issuer_data_mode
 
 abstract class FiscalIssuerDataLocalDatasource {
   Future<void> cacheFiscalIssuerData(FiscalIssuerDataModel data);
-  Future<FiscalIssuerDataModel?> getCachedFiscalIssuerData(int branchId);
+  Future<FiscalIssuerDataModel?> getCachedFiscalIssuerData();
   Future<void> clearCache();
 }
 
@@ -20,16 +20,15 @@ class FiscalIssuerDataLocalDatasourceImpl
 
   @override
   Future<void> cacheFiscalIssuerData(FiscalIssuerDataModel data) async {
-    if (data.branchId == null) return;
-    
-    final key = _keyPrefix + data.branchId.toString();
+
+    const key = _keyPrefix;
     final jsonString = jsonEncode(data.toJson());
     await sharedPreferences.setString(key, jsonString);
   }
 
   @override
-  Future<FiscalIssuerDataModel?> getCachedFiscalIssuerData(int branchId) async {
-    final key = _keyPrefix + branchId.toString();
+  Future<FiscalIssuerDataModel?> getCachedFiscalIssuerData() async {
+    const key = _keyPrefix;
     final jsonString = sharedPreferences.getString(key);
     
     if (jsonString == null) return null;
