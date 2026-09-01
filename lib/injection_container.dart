@@ -247,6 +247,7 @@ Future<void> init() async {
         repository: sl(),
         authLocalDataSource: sl(),
         fiscalIssuerDataRepository: sl(),
+        branchLocalDataSource: sl(),
       ));
   sl.registerFactory(() =>
       ReportsBloc(getReportsUsecase: sl(), generateCreditNoteUsecase: sl()));
@@ -538,6 +539,9 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<VatCategoryRemoteDataSource>(
     () => VatCategoryRemoteDataSourceImpl(),
+  );
+  sl.registerLazySingleton<FiscalIssuerDataService>(
+    () => FiscalIssuerDataService(sl()),
   );
   sl.registerLazySingleton<FiscalIssuerDataLocalDatasource>(
       () => FiscalIssuerDataLocalDatasourceImpl(sharedPreferences: sl()));

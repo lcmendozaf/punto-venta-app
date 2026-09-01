@@ -103,8 +103,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       FiscalIssuerData? fiscalData;
       if (branch?.afipAvailable == true && config?.branchId != null) {
         try {
-          fiscalData = await fiscalIssuerDataRepository
-              .getFiscalIssuerData(config!.branchId!);
+          fiscalData = await fiscalIssuerDataRepository.getFiscalIssuerData();
         } catch (e) {
           print('Error al obtener datos fiscales: $e');
         }
@@ -239,6 +238,12 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       final branchId = event.branchId ?? config?.branchId;
       final deliveryLocationId = config?.pdvId;
 
+      // Obtener información de la sucursal y categoría IVA para determinar plantillas
+      final branchIdToUse = event.branchId ?? config?.branchId;
+      final branch = branchIdToUse != null
+          ? await branchLocalDataSource.getBranchById(branchIdToUse)
+          : null;
+
       if (branchId == null || deliveryLocationId == null) {
         emit(const CheckoutError(
           message:
@@ -276,13 +281,13 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       final user = await authLocalDataSource.getCachedUser();
       final enterprise = await authLocalDataSource.getCachedEnterprise();
 
+      // Obtener datos fiscales del emisor si es operación en blanco
       FiscalIssuerData? fiscalData;
-      if (completedOrder.branchId != null) {
+      if (branch?.afipAvailable == true && config?.branchId != null) {
         try {
-          fiscalData = await fiscalIssuerDataRepository
-              .getFiscalIssuerData(completedOrder.branchId!);
+          fiscalData = await fiscalIssuerDataRepository.getFiscalIssuerData();
         } catch (e) {
-          print('Error al obtener datos fiscales para devolución: $e');
+          print('Error al obtener datos fiscales para devoluciones: $e');
         }
       }
 

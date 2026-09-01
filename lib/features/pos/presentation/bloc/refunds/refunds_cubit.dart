@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:punto_venta_app/features/auth/data/datasources/auth_local_datasources.dart';
+import 'package:punto_venta_app/features/pos/data/datasources/branch_local_datasource.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/fiscal_issuer_data.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/print_job.dart';
 import 'package:punto_venta_app/features/pos/domain/repositories/fiscal_issuer_data_repository.dart';
@@ -10,11 +11,14 @@ import 'refunds_state.dart';
 class RefundsCubit extends Cubit<RefundsState> {
   final RefundsRepository repository;
   final AuthLocalDataSource authLocalDataSource;
+  final BranchLocalDataSource branchLocalDataSource;
+
   final FiscalIssuerDataRepository fiscalIssuerDataRepository;
 
   RefundsCubit({
     required this.repository,
     required this.authLocalDataSource,
+    required this.branchLocalDataSource,
     required this.fiscalIssuerDataRepository,
   }) : super(const RefundsState());
 
@@ -49,16 +53,19 @@ class RefundsCubit extends Cubit<RefundsState> {
         clientId: clientId,
       );
 
+      // Obtener información de la sucursal y categoría IVA para determinar plantillas
+      final branch = await branchLocalDataSource.getBranchById(branchId);
+
       final user = await authLocalDataSource.getCachedUser();
       final enterprise = await authLocalDataSource.getCachedEnterprise();
 
+      // Obtener datos fiscales del emisor si es operación en blanco
       FiscalIssuerData? fiscalData;
-      if (completedOrder.branchId != null) {
+      if (branch?.afipAvailable == true) {
         try {
-          fiscalData = await fiscalIssuerDataRepository
-              .getFiscalIssuerData(completedOrder.branchId!);
+          fiscalData = await fiscalIssuerDataRepository.getFiscalIssuerData();
         } catch (e) {
-          print('Error al obtener datos fiscales para devolución en cash: $e');
+          print('Error al obtener datos fiscales para devoluciones: $e');
         }
       }
 

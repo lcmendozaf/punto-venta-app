@@ -144,7 +144,7 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
     if (templateType == TicketTemplateType.whiteMarket && branchId != null) {
       try {
         final fiscalRepo = di.sl<FiscalIssuerDataRepository>();
-        fiscalData = await fiscalRepo.getFiscalIssuerData(branchId);
+        fiscalData = await fiscalRepo.getFiscalIssuerData();
       } catch (e) {
         print('Error al obtener datos fiscales para reimpresión: $e');
       }
@@ -525,6 +525,7 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
       cae: _printJob!.cae,
       caeDueDate: _printJob!.caeDueDate,
       caeQrCode: _printJob!.caeQrCode,
+      paymentMethods: _printJob!.paymentMethods,
     );
 
     // Disparar evento de impresión
@@ -646,7 +647,10 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
                     Text(
                       _isCreditNote
                           ? 'NOTA DE CREDITO'
-                          : 'comprobante no valido como factura',
+                          : (_printJob!.templateType ==
+                                  TicketTemplateType.whiteMarket)
+                              ? ''
+                              : 'comprobante no valido como factura',
                       style: _isCreditNote
                           ? const TextStyle(fontWeight: FontWeight.bold)
                           : null,

@@ -13,17 +13,17 @@ class FiscalIssuerDataRepositoryImpl implements FiscalIssuerDataRepository {
   });
 
   @override
-  Future<FiscalIssuerData> getFiscalIssuerData(int branchId) async {
+  Future<FiscalIssuerData> getFiscalIssuerData() async {
     try {
       // final cachedData = await localDatasource.getCachedFiscalIssuerData(branchId);
       // if (cachedData != null) {
       //   return cachedData.toEntity();
       // }
 
-      final remoteData = await remoteDatasource.getFiscalIssuerData(branchId);
-      
+      final remoteData = await remoteDatasource.getFiscalIssuerData();
+
       await localDatasource.cacheFiscalIssuerData(remoteData);
-      
+
       return remoteData.toEntity();
     } catch (e) {
       throw Exception('Error al obtener datos fiscales del emisor: $e');

@@ -363,7 +363,7 @@ class CompletedOrdersRepositoryImpl implements CompletedOrdersRepository {
         type: CartActionType.add, // Default to add
       );
     }).toList();
-
+    await taxRepository.getTaxes();
     var taxesFromBackend = await taxLocalDataSource.getCachedTaxes() ?? [];
     if (taxesFromBackend.isEmpty) {
       try {

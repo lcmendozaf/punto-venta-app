@@ -125,8 +125,30 @@ abstract class BaseTicketTemplate {
         commands.add(TicketCommand.feedLine());
         commands.add(TicketCommand.text(buildSeparator('=')));
       } else {
-        // Para factura sin datos fiscales detallados
+        // Para factura En blanco sin datos fiscales detallados
         commands.add(TicketCommand.text("Sistema de Punto de Venta"));
+        //// COPIA
+        if (printJob.isCopy) {
+          // Separador
+          commands.add(TicketCommand.feedLine());
+          commands.add(TicketCommand.text(buildSeparator('=')));
+          commands.add(TicketCommand.feedLine());
+
+          // Documento válido como factura o COPIA
+          commands.add(TicketCommand.bold(true));
+          if (printJob.isCreditNote) {
+            commands.add(TicketCommand.text("COPIA"));
+            commands.add(TicketCommand.feedLine());
+            commands.add(TicketCommand.text("NOTA DE CREDITO"));
+          } else {
+            commands.add(TicketCommand.text("COPIA"));
+            commands.add(TicketCommand.feedLine());
+            commands.add(TicketCommand.text("NO VALIDA COMO FACTURA"));
+          }
+          commands.add(TicketCommand.bold(false));
+          commands.add(TicketCommand.feedLine());
+          commands.add(TicketCommand.text(buildSeparator('=')));
+        }
         commands.add(TicketCommand.feedLine());
         commands.add(
             TicketCommand.text(printJob.isCreditNote ? "Nota de Credito" : ""));
@@ -427,8 +449,8 @@ abstract class BaseTicketTemplate {
         textLines.add("CAE: ${printJob.cae}");
       }
       if (printJob.caeDueDate != null && printJob.caeDueDate!.isNotEmpty) {
-
-        textLines.add("Vto. CAE: ${utils.formatDate(printJob.caeDueDate!, fromDateFormat: 'yyyy-MM-dd', toDateFormat: 'dd/MM/yyyy')}");
+        textLines.add(
+            "Vto. CAE: ${utils.formatDate(printJob.caeDueDate!, fromDateFormat: 'yyyy-MM-dd', toDateFormat: 'dd/MM/yyyy')}");
       }
 
       if (printJob.templateType == TicketTemplateType.whiteMarket) {
