@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:punto_venta_app/core/utils/app_logger.dart';
 import 'package:retrofit/retrofit.dart';
 import 'package:punto_venta_app/core/network/error_handler.dart';
 import 'package:punto_venta_app/injection_container.dart' as di;
@@ -41,7 +42,8 @@ class UserApiDataSourceImpl implements UserApiDataSource {
         'token': response['token'],
         'user': response['user'],
       };
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error("[UserApiDataSource] authenticateUser", e,stackTrace);
       throw Exception(ErrorHandler.handleError(e,
           defaultMessage: 'Error al autenticar usuario'));
     }

@@ -154,15 +154,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    AppLogger.info('AuthBloc: AuthenticateUserRequested username=${event.username}');
     try {
       final user = await authenticateUserUseCase(
         event.username,
         event.password,
       );
 
+      AppLogger.info(
+        'AuthBloc: authenticateUser OK id=${user.id} name=${user.name} role=${user.tipo}',
+      );
       emit(AuthAuthenticated(user: user));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'AuthBloc: AuthenticateUserRequested falló username=${event.username}',
+        e,
+        stackTrace,
+      );
       final errorMessage = _extractErrorMessage(e);
+      AppLogger.error('AuthBloc: mensaje mostrado al usuario: $errorMessage');
       emit(AuthError(message: errorMessage));
     }
   }

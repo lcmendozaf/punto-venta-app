@@ -47,9 +47,9 @@ class AppLogger {
   /// (crash nativo). Si los latidos siguen, la app quedó colgada.
   static void startHeartbeat({Duration interval = const Duration(seconds: 5)}) {
     _heartbeat?.cancel();
-    _heartbeat = Timer.periodic(interval, (timer) {
+    /*_heartbeat = Timer.periodic(interval, (timer) {
       _write('BEAT', 'app viva (${timer.tick * interval.inSeconds}s)');
-    });
+    });*/
   }
 
   static void stopHeartbeat() {
