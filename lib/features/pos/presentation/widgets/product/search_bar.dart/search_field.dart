@@ -7,7 +7,7 @@ import 'package:punto_venta_app/core/constants/app_string.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_bloc.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_state.dart';
 
-class SearchField extends StatelessWidget {
+class SearchField extends StatefulWidget {
   final TextEditingController controller;
   final bool autofocus;
   final Function(String) onSearchChanged;
@@ -24,54 +24,105 @@ class SearchField extends StatelessWidget {
   });
 
   @override
+  State<SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<SearchField> {
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _requestFocus({bool retryAfterSnackBar = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _focusNode.requestFocus();
+
+      if (retryAfterSnackBar) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) _focusNode.requestFocus();
+        });
+      }
+    });
+  }
+
+  Future<void> _handleSubmitted(String value, bool isBarcodeMode) async {
+    await widget.onSubmitted(value);
+    if (!mounted) return;
+    if (isBarcodeMode) {
+      _requestFocus(retryAfterSnackBar: true);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<UiBloc, UiState>(
+    return BlocConsumer<UiBloc, UiState>(
+      listenWhen: (previous, current) {
+        if (previous is UiLoaded && current is UiLoaded) {
+          return previous.isBarcodeSearchEnabled !=
+              current.isBarcodeSearchEnabled;
+        }
+        return false;
+      },
+      listener: (context, state) {
+        if (state is UiLoaded && state.isBarcodeSearchEnabled) {
+          _requestFocus();
+        }
+      },
       builder: (context, state) {
         final uiState = state as UiLoaded;
+        final isBarcodeMode = uiState.isBarcodeSearchEnabled;
 
         return SizedBox(
           width: double.infinity,
           height: AppDimensions.buttonHeightm,
           child: TextField(
-            controller: controller,
-            autofocus: autofocus,
+            controller: widget.controller,
+            focusNode: _focusNode,
+            autofocus: widget.autofocus || isBarcodeMode,
+            textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 0,
               ),
-              hintText: uiState.isBarcodeSearchEnabled
+              hintText: isBarcodeMode
                   ? AppStrings.searchBarCodeHint
                   : AppStrings.searchHint,
               prefixIcon: Icon(
-                uiState.isBarcodeSearchEnabled
-                    ? FontAwesomeIcons.barcode
-                    : Icons.search,
+                isBarcodeMode ? FontAwesomeIcons.barcode : Icons.search,
                 color: AppColors.primary,
               ),
-              suffixIcon: controller.text.isNotEmpty
+              suffixIcon: widget.controller.text.isNotEmpty
                   ? IconButton(
-                      icon:
-                          const Icon(Icons.clear, color: AppColors.textSecondary),
-                      onPressed: onClearSearch,
+                      icon: const Icon(Icons.clear,
+                          color: AppColors.textSecondary),
+                      onPressed: widget.onClearSearch,
                     )
                   : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.borderRadiusM),
+                borderRadius:
+                    BorderRadius.circular(AppDimensions.borderRadiusM),
                 borderSide: BorderSide(color: Colors.grey.shade300),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.borderRadiusM),
+                borderRadius:
+                    BorderRadius.circular(AppDimensions.borderRadiusM),
                 borderSide: BorderSide(color: Colors.grey.shade300),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.borderRadiusM),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderRadius:
+                    BorderRadius.circular(AppDimensions.borderRadiusM),
+                borderSide:
+                    const BorderSide(color: AppColors.primary, width: 2),
               ),
               filled: true,
             ),
-            onChanged: uiState.isBarcodeSearchEnabled ? null : onSearchChanged,
-            onSubmitted: (value) => onSubmitted(value),
+            onChanged: isBarcodeMode ? null : widget.onSearchChanged,
+            onSubmitted: (value) => _handleSubmitted(value, isBarcodeMode),
           ),
         );
       },
