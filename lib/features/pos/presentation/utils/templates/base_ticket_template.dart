@@ -240,12 +240,12 @@ abstract class BaseTicketTemplate {
       final basePrice = item.product.price ?? 0;
 
       if (item.isWeighted == true) {
-        // es peso
+        final weightKg = item.weightKg ?? 0.0;
         final unitPrice = getDisplayUnitPrice(item, basePrice,
             showPricesWithTax: showPricesWithTax);
-        final subtotalValue = (item.quantity * unitPrice).formatToCurrency();
+        final subtotalValue = (weightKg * unitPrice).formatToCurrency();
         final line =
-            "  ${(item.quantity / 1000).toStringAsFixed(3)} kg x ${unitPrice.formatToCurrency()}";
+            "  ${weightKg.toStringAsFixed(3)} kg x ${unitPrice.formatToCurrency()}";
 
         final totalSpaces = lineWidth - line.length - subtotalValue.length;
         final spacer = totalSpaces > 0 ? ' ' * totalSpaces : ' ';

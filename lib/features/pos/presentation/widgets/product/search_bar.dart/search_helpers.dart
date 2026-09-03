@@ -11,6 +11,7 @@ import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_event.dart'
 import 'package:punto_venta_app/features/pos/presentation/bloc/ui/ui_state.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/product.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/product/search_bar.dart/search_weight_helper.dart';
+import 'package:punto_venta_app/features/pos/presentation/widgets/product/search_bar.dart/weight_input_dialog.dart';
 
 class SearchProcessor {
   static Future<void> processCode({
@@ -86,8 +87,34 @@ class SearchProcessor {
       return;
     }
 
+    // Pesaje manual: barcode 20/21 sin peso, o producto ponderable por código normal.
+    final needsManualWeight =
+        (weightKg != null && weightKg <= 0) ||
+            (weightKg == null && isProductWeighted(found));
+
+    if (needsManualWeight) {
+      searchController.clear();
+      onClearSearch();
+
+      final manualWeight = await showWeightInputDialog(
+        context,
+        product: found,
+        isDeleteMode: isDeleteMode,
+      );
+
+      if (!context.mounted) return;
+
+      if (manualWeight == null || manualWeight <= 0) {
+        context.read<UiBloc>().add(ResetQuantity());
+        return;
+      }
+
+      weightKg = manualWeight;
+      calculatedUnitPrice = calculateWeightedLineTotal(found, manualWeight);
+    }
+
     int finalQuantity = qty;
-    if (matchedBarcode != null) {
+    if (matchedBarcode != null && weightKg == null) {
       finalQuantity = qty * (matchedBarcode.units ?? 1);
 
       String tipoVentaMsg = '';
@@ -148,6 +175,15 @@ class SearchProcessor {
           weightKg: weightKg,
           pricePerKg: calculatedUnitPrice,
         ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${weightKg.toStringAsFixed(3)} kg × ${found.name} agregado',
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 1),
+          ),
+        );
       } else {
         cartBloc.add(AddToCart(found, quantity: finalQuantity));
         ScaffoldMessenger.of(context).showSnackBar(

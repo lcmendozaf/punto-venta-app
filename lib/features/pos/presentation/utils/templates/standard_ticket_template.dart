@@ -45,19 +45,14 @@ class StandardTicketTemplate extends BaseTicketTemplate {
       commands.add(TicketCommand.feedLine());
 
       if (item.isWeighted == true) {
-        final weightKg = (item.weightKg ?? 0.0);
-        final pricePerKg = (item.pricePerKg ?? item.product.price ?? 0.0);
+        final weightKg = item.weightKg ?? 0.0;
+        final unitPriceNet = item.product.price ?? 0.0;
+        final displayPrice = getDisplayUnitPrice(item, unitPriceNet,
+            showPricesWithTax: printJob.showPricesWithTax);
 
-        // Calcular precio con o sin IVA según configuración
-        final displayPrice = getDisplayUnitPrice(item, pricePerKg, showPricesWithTax: printJob.showPricesWithTax);
-
-        final subtotal = weightKg * displayPrice;
-
-        final subtotalValue = subtotal.formatToCurrency();
-        final weightLabel = "$weightKg kg";
-        final priceLabel = displayPrice.formatToCurrency();
-
-        final lineLeft = "  $weightLabel x $priceLabel";
+        final subtotalValue = (weightKg * displayPrice).formatToCurrency();
+        final lineLeft =
+            "  ${weightKg.toStringAsFixed(3)} kg x ${displayPrice.formatToCurrency()}";
         final totalSpacesLeft =
             BaseTicketTemplate.lineWidth - lineLeft.length - subtotalValue.length;
         final spacerLeft = totalSpacesLeft > 0 ? ' ' * totalSpacesLeft : ' ';

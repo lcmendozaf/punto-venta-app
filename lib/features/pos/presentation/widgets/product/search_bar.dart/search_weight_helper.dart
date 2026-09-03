@@ -10,8 +10,11 @@ class WeightBarcodeResult {
     required this.weightKg,
     required this.calculatedUnitPrice,
   });
+
+  bool get hasEmbeddedWeight => weightKg > 0;
 }
 
+/// EAN-13 de balanza: prefijo 20/21, PLU en [2..7), peso en gramos en [7..12).
 WeightBarcodeResult? parseWeightBarcode(String code, List<Product> products) {
   if (!(code.length == 13 &&
       (code.startsWith('20') || code.startsWith('21')))) {
@@ -21,8 +24,7 @@ WeightBarcodeResult? parseWeightBarcode(String code, List<Product> products) {
   final weightString = code.substring(7, 12);
   final codeString = code.substring(2, 7);
   final weightInt = int.tryParse(weightString) ?? 0;
-  final singleWeight = weightInt / 1000.0;
-  final weightKg = singleWeight;
+  final weightKg = weightInt / 1000.0;
 
   final found = products.cast<Product?>().firstWhere(
     (p) {
@@ -40,14 +42,19 @@ WeightBarcodeResult? parseWeightBarcode(String code, List<Product> products) {
 
   if (found == null) return null;
 
-  final netWeight = found.netWeight;
-  final priceNetWeight = netWeight > 0 ? found.price ?? 0.0 : 0.0;
-  final calculatedUnitPrice =
-      priceNetWeight * weightKg;
-
   return WeightBarcodeResult(
     product: found,
     weightKg: weightKg,
-    calculatedUnitPrice: calculatedUnitPrice,
+    calculatedUnitPrice: calculateWeightedLineTotal(found, weightKg),
   );
+}
+
+bool isProductWeighted(Product product) {
+  return product.isWeighted.toUpperCase() == 'S';
+}
+
+/// Precio de lista se trata como $/kg cuando el producto tiene netWeight configurado.
+double calculateWeightedLineTotal(Product product, double weightKg) {
+  final pricePerKg = product.netWeight > 0 ? (product.price ?? 0.0) : 0.0;
+  return pricePerKg * weightKg;
 }

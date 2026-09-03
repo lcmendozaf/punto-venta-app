@@ -705,12 +705,17 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
 
             // Items
             ...(_recalculatedTicket ?? widget.ticket).items.map((item) {
-              final basePrice = item.pricePerKg ?? item.product.price ?? 0.0;
+              final isWeighted = item.isWeighted == true;
+              final basePrice = item.product.price ?? 0.0;
               final displayPrice = _getDisplayUnitPrice(
                 item,
                 basePrice,
                 showPricesWithTax: _printJob!.showPricesWithTax,
               );
+              final weightKg = item.weightKg ?? 0.0;
+              final lineTotal = isWeighted
+                  ? weightKg * displayPrice
+                  : item.quantity * displayPrice;
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -726,13 +731,12 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '  ${item.weightKg ?? '-'} kg x ${displayPrice.formatToCurrency()}',
+                            '  ${weightKg.toStringAsFixed(3)} kg x ${displayPrice.formatToCurrency()}',
                             style: TextStyle(
                                 fontSize: 12, color: Colors.grey[600]),
                           ),
                           Text(
-                            ((item.weightKg ?? 0.0) * displayPrice)
-                                .formatToCurrency(),
+                            lineTotal.formatToCurrency(),
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ],

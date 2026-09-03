@@ -25,6 +25,9 @@ import 'package:punto_venta_app/features/pos/presentation/widgets/catalog/catalo
 import 'package:punto_venta_app/features/pos/presentation/widgets/product/integrated_search_bar.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/product/category_tabs_section.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/product/product_grid_section.dart';
+import 'package:punto_venta_app/features/pos/presentation/widgets/product/search_bar.dart/search_weight_helper.dart';
+import 'package:punto_venta_app/features/pos/presentation/widgets/product/search_bar.dart/weight_input_dialog.dart';
+import 'package:punto_venta_app/features/pos/domain/entities/product.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/cash_register/cash_register_cubit.dart';
 import 'package:punto_venta_app/features/pos/presentation/bloc/cash_register/cash_register_state.dart';
 import 'package:punto_venta_app/features/pos/presentation/widgets/cash_register/closed_register_view.dart';
@@ -181,60 +184,12 @@ class _PosMainPageState extends State<PosMainPage> {
                                         ? _buildCartLogsInCatalog()
                                         : ProductGridSection(
                                             onProductTap: (product, quantity,
-                                                isDeleteMode) {
-                                              if (isDeleteMode) {
-                                                final cartBloc =
-                                                    context.read<CartBloc>();
-                                                final quantityInCart = cartBloc
-                                                    .getProductQuantityInCart(
-                                                        product.id.toString());
-
-                                                if (quantityInCart >=
-                                                    quantity) {
-                                                  cartBloc.add(
-                                                      RemoveQuantityFromCart(
-                                                          product.id.toString(),
-                                                          quantity));
-                                                } else if (quantityInCart > 0) {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        'Solo hay $quantityInCart unidades de ${product.name} en el carrito. No se puede eliminar $quantity.',
-                                                      ),
-                                                      duration: const Duration(
-                                                          seconds: 2),
-                                                      behavior: SnackBarBehavior
-                                                          .floating,
-                                                      backgroundColor:
-                                                          AppColors.warning,
-                                                    ),
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                          '${product.name} no está en el carrito'),
-                                                      duration: const Duration(
-                                                          seconds: 1),
-                                                      behavior: SnackBarBehavior
-                                                          .floating,
-                                                      backgroundColor:
-                                                          AppColors.info,
-                                                    ),
-                                                  );
-                                                }
-                                              } else {
-                                                if (product.price != null) {
-                                                  context.read<CartBloc>().add(
-                                                      AddToCart(product,
-                                                          quantity: quantity));
-                                                }
-                                              }
-                                              context
-                                                  .read<UiBloc>()
-                                                  .add(ResetQuantity());
+                                                isDeleteMode) async {
+                                              await _handleProductTap(
+                                                product: product,
+                                                quantity: quantity,
+                                                isDeleteMode: isDeleteMode,
+                                              );
                                             },
                                           ),
                                   );
@@ -261,6 +216,87 @@ class _PosMainPageState extends State<PosMainPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleProductTap({
+    required Product product,
+    required int quantity,
+    required bool isDeleteMode,
+  }) async {
+    if (isProductWeighted(product)) {
+      final manualWeight = await showWeightInputDialog(
+        context,
+        product: product,
+        isDeleteMode: isDeleteMode,
+      );
+
+      if (!mounted) return;
+
+      if (manualWeight == null || manualWeight <= 0) {
+        context.read<UiBloc>().add(ResetQuantity());
+        return;
+      }
+
+      final lineTotal = calculateWeightedLineTotal(product, manualWeight);
+
+      if (isDeleteMode) {
+        context.read<CartBloc>().add(RemoveQuantityFromCart(
+              product.id.toString(),
+              1,
+              isWeighted: true,
+              weightKg: manualWeight,
+              pricePerKg: lineTotal,
+            ));
+      } else if (product.price != null) {
+        context.read<CartBloc>().add(AddToCart(
+              product,
+              quantity: 1,
+              isWeighted: true,
+              weightKg: manualWeight,
+              pricePerKg: lineTotal,
+            ));
+      }
+
+      context.read<UiBloc>().add(ResetQuantity());
+      return;
+    }
+
+    if (isDeleteMode) {
+      final cartBloc = context.read<CartBloc>();
+      final quantityInCart =
+          cartBloc.getProductQuantityInCart(product.id.toString());
+
+      if (quantityInCart >= quantity) {
+        cartBloc.add(
+            RemoveQuantityFromCart(product.id.toString(), quantity));
+      } else if (quantityInCart > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Solo hay $quantityInCart unidades de ${product.name} en el carrito. No se puede eliminar $quantity.',
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${product.name} no está en el carrito'),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.info,
+          ),
+        );
+      }
+    } else if (product.price != null) {
+      context
+          .read<CartBloc>()
+          .add(AddToCart(product, quantity: quantity));
+    }
+
+    context.read<UiBloc>().add(ResetQuantity());
   }
 
   Widget _buildCartLogsInCatalog() {
