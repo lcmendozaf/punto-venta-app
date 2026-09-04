@@ -213,6 +213,5 @@ String normalizeBarcode(String rawCode) {
 
 bool barcodesMatch(int? storedBarcode, String scannedCode) {
   if (storedBarcode == null) return false;
-  final normalizedScanned = normalizeBarcode(scannedCode);
-  return storedBarcode.toString() == normalizedScanned;
+  return storedBarcode.toString() == scannedCode;
 }
