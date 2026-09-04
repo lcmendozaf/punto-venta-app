@@ -49,10 +49,11 @@ class SearchProcessor {
           found = weightResult.product;
           calculatedUnitPrice = weightResult.calculatedUnitPrice;
         } else {
+          final normalizedCode = normalizeBarcode(code);
           for (var product in prodState.products) {
             if (product.barcodes != null) {
               for (var barcode in product.barcodes!) {
-                if (barcode.barcode.toString() == code) {
+                if (barcodesMatch(barcode.barcode, normalizedCode)) {
                   found = product;
                   matchedBarcode = barcode;
                   break;
@@ -200,4 +201,18 @@ class SearchProcessor {
     onClearSearch();
     context.read<UiBloc>().add(ResetQuantity());
   }
+}
+
+/// Los barcodes se almacenan como [int], por lo que pierden ceros a la izquierda
+String normalizeBarcode(String rawCode) {
+  final trimmed = rawCode.trim();
+  if (trimmed.isEmpty) return trimmed;
+  final asInt = int.tryParse(trimmed);
+  return asInt?.toString() ?? trimmed;
+}
+
+bool barcodesMatch(int? storedBarcode, String scannedCode) {
+  if (storedBarcode == null) return false;
+  final normalizedScanned = normalizeBarcode(scannedCode);
+  return storedBarcode.toString() == normalizedScanned;
 }
