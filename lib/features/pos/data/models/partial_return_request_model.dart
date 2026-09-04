@@ -25,6 +25,7 @@ List<Map<String, dynamic>>? _itemsToJson(List<PartialReturnItemModel>? items) =>
 class PartialReturnItemModel with _$PartialReturnItemModel {
   const factory PartialReturnItemModel({
     @JsonKey(name: 'article_id') required int articleId,
+    @JsonKey(name: 'priceListId') required int priceListId,
     @JsonKey(name: 'quantity') required double quantity,
     @JsonKey(name: 'is_weighted') String? isWeighted,
     @JsonKey(name: 'net_weight') double? netWeight,

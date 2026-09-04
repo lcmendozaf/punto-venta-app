@@ -235,6 +235,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
     try {
       final config = await pdvLocalDataSource.getPdvConfig();
+      final priceList = await priceListLocalDataSource.getCurrentPriceList();
       final branchId = event.branchId ?? config?.branchId;
       final deliveryLocationId = config?.pdvId;
 
@@ -256,6 +257,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         final isWeighted = item.isWeighted == true;
         return PartialReturnItemModel(
           articleId: item.product.id,
+          priceListId: priceList,
           quantity: isWeighted ? 1.0 : item.quantity.toDouble(),
           isWeighted: isWeighted ? 'S' : 'N',
           netWeight: isWeighted ? item.product.netWeight : null,
