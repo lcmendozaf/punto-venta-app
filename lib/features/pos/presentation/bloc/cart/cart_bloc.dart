@@ -116,7 +116,13 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       RemoveQuantityFromCart event, Emitter<CartState> emit) {
     final currentItems = _getCurrentItems();
     final newItems = manageCartUsecase.removeQuantityFromCart(
-        currentItems, event.productId, event.quantity);
+      currentItems,
+      event.productId,
+      event.quantity,
+      isWeighted: event.isWeighted ?? false,
+      weightKg: event.weightKg,
+      pricePerKg: event.pricePerKg,
+    );
     final totalItems = manageCartUsecase.getTotalItems(newItems);
 
     final existingProduct = currentItems.firstWhere(

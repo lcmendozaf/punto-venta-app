@@ -17,12 +17,26 @@ class ManageCartUsecase {
     );
 
     if (existingItemIndex != -1) {
-      newCart[existingItemIndex] = newCart[existingItemIndex].copyWith(
-        quantity: newCart[existingItemIndex].quantity + quantity,
-        isWeighted: isWeighted ? true : (newCart[existingItemIndex].isWeighted ?? false),
-        weightKg: weightKg ?? newCart[existingItemIndex].weightKg,
-        pricePerKg: pricePerKg ?? newCart[existingItemIndex].pricePerKg,
-      );
+      final existing = newCart[existingItemIndex];
+
+      if (isWeighted || (existing.isWeighted ?? false)) {
+        // Mismo producto pesado: acumular kilos y total de línea.
+        final mergedWeight =
+            (existing.weightKg ?? 0.0) + (weightKg ?? 0.0);
+        final mergedLineTotal =
+            (existing.pricePerKg ?? 0.0) + (pricePerKg ?? 0.0);
+
+        newCart[existingItemIndex] = existing.copyWith(
+          quantity: existing.quantity + quantity,
+          isWeighted: true,
+          weightKg: mergedWeight,
+          pricePerKg: mergedLineTotal,
+        );
+      } else {
+        newCart[existingItemIndex] = existing.copyWith(
+          quantity: existing.quantity + quantity,
+        );
+      }
     } else {
       newCart.add(CartItem(
         product: product,
@@ -37,32 +51,54 @@ class ManageCartUsecase {
     return newCart;
   }
 
-
   List<CartItem> removeQuantityFromCart(
-      List<CartItem> currentCart, String productId, int quantityToRemove) {
+    List<CartItem> currentCart,
+    String productId,
+    int quantityToRemove, {
+    bool isWeighted = false,
+    double? weightKg,
+    double? pricePerKg,
+  }) {
     final List<CartItem> newCart = List.from(currentCart);
 
     final existingItemIndex = newCart.indexWhere(
       (item) => item.product.id.toString() == productId,
     );
 
-    if (existingItemIndex != -1) {
-      final currentItem = newCart[existingItemIndex];
-      final newQuantity = currentItem.quantity - quantityToRemove;
+    if (existingItemIndex == -1) return newCart;
 
-      if (newQuantity <= 0) {
-        // Si la cantidad resultante es 0 o menor, eliminar el item completamente
+    final currentItem = newCart[existingItemIndex];
+
+    if (isWeighted || (currentItem.isWeighted ?? false)) {
+      final remainingWeight =
+          (currentItem.weightKg ?? 0.0) - (weightKg ?? 0.0);
+      final remainingLineTotal =
+          (currentItem.pricePerKg ?? 0.0) - (pricePerKg ?? 0.0);
+      final remainingQuantity = currentItem.quantity - quantityToRemove;
+
+      if (remainingWeight <= 0.0001 || remainingQuantity <= 0) {
         newCart.removeAt(existingItemIndex);
       } else {
-        // Si queda cantidad, actualizar el item
-        newCart[existingItemIndex] =
-            currentItem.copyWith(quantity: newQuantity);
+        newCart[existingItemIndex] = currentItem.copyWith(
+          quantity: remainingQuantity,
+          weightKg: remainingWeight,
+          pricePerKg: remainingLineTotal < 0 ? 0.0 : remainingLineTotal,
+        );
       }
+      return newCart;
+    }
+
+    final newQuantity = currentItem.quantity - quantityToRemove;
+
+    if (newQuantity <= 0) {
+      newCart.removeAt(existingItemIndex);
+    } else {
+      newCart[existingItemIndex] =
+          currentItem.copyWith(quantity: newQuantity);
     }
 
     return newCart;
   }
-
 
   double calculateTotal(List<CartItem> cart) {
     return cart.fold(0.0, (total, item) => total + item.totalPrice);
@@ -71,5 +107,4 @@ class ManageCartUsecase {
   int getTotalItems(List<CartItem> cart) {
     return cart.fold(0, (total, item) => total + item.quantity);
   }
-
 }

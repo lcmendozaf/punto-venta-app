@@ -253,12 +253,13 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       }
 
       final returnItems = event.items.map((item) {
-        final double qty = (item.isWeighted == true)
-            ? (item.weightKg ?? 0.0)
-            : item.quantity.toDouble();
+        final isWeighted = item.isWeighted == true;
         return PartialReturnItemModel(
           articleId: item.product.id,
-          quantity: qty,
+          quantity: isWeighted ? 1.0 : item.quantity.toDouble(),
+          isWeighted: isWeighted ? 'S' : 'N',
+          netWeight: isWeighted ? item.product.netWeight : null,
+          weight: isWeighted ? (item.weightKg ?? 0.0) : null,
         );
       }).toList();
 

@@ -4,7 +4,6 @@ import 'package:punto_venta_app/core/constants/app_colors.dart';
 import 'package:punto_venta_app/core/constants/app_dimensions.dart';
 import 'package:punto_venta_app/core/utils/extensions.dart';
 import 'package:punto_venta_app/features/pos/domain/entities/product.dart';
-import 'package:punto_venta_app/features/pos/presentation/widgets/product/search_bar.dart/search_weight_helper.dart';
 
 Future<double?> showWeightInputDialog(
   BuildContext context, {
@@ -55,6 +54,13 @@ class _WeightInputDialogState extends State<WeightInputDialog> {
     super.dispose();
   }
 
+  double get _priceWithTax {
+    final price = widget.product.netWeight > 0
+        ? (widget.product.price ?? 0.0)
+        : 0.0;
+    return price + (price * (widget.product.vat / 100));
+  }
+
   int? get _parsedGrams {
     final raw = _weightController.text.trim();
     if (raw.isEmpty) return null;
@@ -67,10 +73,10 @@ class _WeightInputDialogState extends State<WeightInputDialog> {
     return grams / 1000.0;
   }
 
-  double get _lineTotal {
+  double get _lineTotalWithTax {
     final weightKg = _weightKg;
     if (weightKg == null) return 0;
-    return calculateWeightedLineTotal(widget.product, weightKg);
+    return _priceWithTax * weightKg;
   }
 
   void _submit() {
@@ -86,10 +92,6 @@ class _WeightInputDialogState extends State<WeightInputDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final unitPrice = widget.product.netWeight > 0
-        ? (widget.product.price ?? 0.0)
-        : 0.0;
-
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.borderRadiusM),
@@ -116,7 +118,7 @@ class _WeightInputDialogState extends State<WeightInputDialog> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Precio: ${unitPrice.formatToCurrency()} / kg',
+              'Precio: ${_priceWithTax.formatToCurrency()} / kg',
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey.shade600,
@@ -135,12 +137,12 @@ class _WeightInputDialogState extends State<WeightInputDialog> {
               ],
               decoration: InputDecoration(
                 labelText: 'Peso (gramos)',
-                hintText: '250',
+                hintText: 'ejemplo: 250',
                 errorText: _errorText,
                 suffixText: 'g',
                 helperText: _weightKg == null
                     ? 'Ej: 250 = 0,250 kg'
-                    : '${_parsedGrams} g = ${_weightKg!.toStringAsFixed(3)} kg',
+                    : '$_parsedGrams g = ${_weightKg!.toStringAsFixed(3)} kg',
                 border: const OutlineInputBorder(),
               ),
               onChanged: (_) {
@@ -168,7 +170,7 @@ class _WeightInputDialogState extends State<WeightInputDialog> {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    _lineTotal.formatToCurrency(),
+                    _lineTotalWithTax.formatToCurrency(),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,

@@ -45,18 +45,23 @@ class StandardTicketTemplate extends BaseTicketTemplate {
       commands.add(TicketCommand.feedLine());
 
       if (item.isWeighted == true) {
+        // es producto pesado
         final weightKg = item.weightKg ?? 0.0;
         final unitPriceNet = item.product.price ?? 0.0;
         final displayPrice = getDisplayUnitPrice(item, unitPriceNet,
             showPricesWithTax: printJob.showPricesWithTax);
 
+        // se multiplica el peso por el precio unitario
         final subtotalValue = (weightKg * displayPrice).formatToCurrency();
+
+        // se muestra el peso y el precio unitario
         final lineLeft =
             "  ${weightKg.toStringAsFixed(3)} kg x ${displayPrice.formatToCurrency()}";
         final totalSpacesLeft =
             BaseTicketTemplate.lineWidth - lineLeft.length - subtotalValue.length;
         final spacerLeft = totalSpacesLeft > 0 ? ' ' * totalSpacesLeft : ' ';
 
+        // se muestra el peso y el precio unitario
         commands.add(TicketCommand.text("$lineLeft$spacerLeft$subtotalValue"));
         commands.add(TicketCommand.feedLine());
       } else {

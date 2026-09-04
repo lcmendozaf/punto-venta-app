@@ -26,6 +26,9 @@ class PartialReturnItemModel with _$PartialReturnItemModel {
   const factory PartialReturnItemModel({
     @JsonKey(name: 'article_id') required int articleId,
     @JsonKey(name: 'quantity') required double quantity,
+    @JsonKey(name: 'is_weighted') String? isWeighted,
+    @JsonKey(name: 'net_weight') double? netWeight,
+    @JsonKey(name: 'weight') double? weight,
   }) = _PartialReturnItemModel;
 
   factory PartialReturnItemModel.fromJson(Map<String, dynamic> json) =>

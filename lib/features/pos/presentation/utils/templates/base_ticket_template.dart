@@ -240,16 +240,23 @@ abstract class BaseTicketTemplate {
       final basePrice = item.product.price ?? 0;
 
       if (item.isWeighted == true) {
+        // es producto pesado
         final weightKg = item.weightKg ?? 0.0;
+
         final unitPrice = getDisplayUnitPrice(item, basePrice,
             showPricesWithTax: showPricesWithTax);
+        
+        // se multiplica el peso por el precio unitario
         final subtotalValue = (weightKg * unitPrice).formatToCurrency();
+
+        // se muestra el peso y el precio unitario
         final line =
             "  ${weightKg.toStringAsFixed(3)} kg x ${unitPrice.formatToCurrency()}";
 
         final totalSpaces = lineWidth - line.length - subtotalValue.length;
         final spacer = totalSpaces > 0 ? ' ' * totalSpaces : ' ';
 
+        // se muestra el peso y el precio unitario
         commands.add(TicketCommand.text("$line$spacer$subtotalValue"));
         commands.add(TicketCommand.feedLine());
       } else {

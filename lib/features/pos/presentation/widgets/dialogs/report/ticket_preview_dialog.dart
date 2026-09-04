@@ -713,6 +713,9 @@ class _TicketPreviewContentState extends State<_TicketPreviewContent> {
                 showPricesWithTax: _printJob!.showPricesWithTax,
               );
               final weightKg = item.weightKg ?? 0.0;
+              
+              // si es producto pesado, se multiplica el peso por el precio unitario
+              // si no es producto pesado, se multiplica la cantidad por el precio unitario
               final lineTotal = isWeighted
                   ? weightKg * displayPrice
                   : item.quantity * displayPrice;

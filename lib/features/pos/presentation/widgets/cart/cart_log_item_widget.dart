@@ -27,12 +27,10 @@ class CartLogItemWidget extends StatelessWidget {
       displayedUnitPrice += internalTax * fractional;
     }
 
-    double displayedRowTotal;
-    if (entry.item.isWeighted ?? false) {
-      displayedRowTotal = entry.item.pricePerKg ?? 0.0;
-    } else {
-      displayedRowTotal = displayedUnitPrice * entry.item.quantity;
-    }
+    final isWeighted = entry.item.isWeighted ?? false;
+    final double displayedRowTotal = isWeighted
+        ? displayedUnitPrice * (entry.item.weightKg ?? 0.0)
+        : displayedUnitPrice * entry.item.quantity;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -65,7 +63,7 @@ class CartLogItemWidget extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        (entry.item.isWeighted ?? false)
+                        isWeighted
                             ? '$sign${entry.item.weightKg} kg'
                             : '$sign${entry.item.quantity}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -74,7 +72,7 @@ class CartLogItemWidget extends StatelessWidget {
                       ),
                       Flexible(
                         child: Text(
-                          '  • ${displayedUnitPrice.formatToCurrency()}  • ${entry.timestamp.hour.toString().padLeft(2, '0')}:${entry.timestamp.minute.toString().padLeft(2, '0')}',
+                          '  • ${displayedUnitPrice.formatToCurrency()}${isWeighted ? ' / kg' : ''}  • ${entry.timestamp.hour.toString().padLeft(2, '0')}:${entry.timestamp.minute.toString().padLeft(2, '0')}',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
